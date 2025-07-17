@@ -68,7 +68,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             player: player,
             startPos: start,
             endPos: location,
-            lastTapTime: &lastTapTime
         )
         TrajectoryHelper.clear(in: self)
         jumpDirection = 0

@@ -9,7 +9,10 @@ import SpriteKit
 
 enum PlayerFactory {
     static func createPlayer(in scene: SKScene) -> SKShapeNode {
-        let player = SKShapeNode(rectOf: CGSize(width: 20, height: 40), cornerRadius: 8)
+        let player = SKShapeNode(
+            rectOf: CGSize(width: 20, height: 40),
+            cornerRadius: 8
+        )
         player.fillColor = .gray
         player.position = CGPoint(x: scene.frame.midX, y: 100)
 
@@ -27,24 +30,34 @@ enum PlayerFactory {
         return player
     }
 
-    static func handleJumpOrSpin(player: SKShapeNode, startPos: CGPoint, endPos: CGPoint, lastTapTime: inout TimeInterval) {
+    static func handleJumpOrSpin(
+        player: SKShapeNode,
+        startPos: CGPoint,
+        endPos: CGPoint
+    ) {
         let velocity = player.physicsBody?.velocity ?? .zero
         let speedThreshold: CGFloat = 1
         let isIdle = abs(velocity.dy) < speedThreshold
 
-        let currentTime = CACurrentMediaTime()
-        let timeSinceLastTap = currentTime - lastTapTime
-        lastTapTime = currentTime
-
-        let dx = endPos.x - startPos.x
-        let jumpStrengthX = dx * 4
-        let jumpStrengthY: CGFloat = 1000
-
         if isIdle {
-            player.physicsBody?.velocity = CGVector(dx: jumpStrengthX, dy: jumpStrengthY)
-        } else {
-            let spinBoost = max(1.0, 10.0 - timeSinceLastTap)
-            player.physicsBody?.angularVelocity = spinBoost
+            let dx = endPos.x - startPos.x
+            let dy = endPos.y - startPos.y
+            let length = sqrt(dx * dx + dy * dy)
+            let jumpStrengthX = dx * 55
+            let jumpStrengthY = dy * 45
+
+            player.physicsBody?.velocity = CGVector(
+                dx: -jumpStrengthX,
+                dy: jumpStrengthY
+            )
+
+            var spin = 0.0
+            if dx > 0 {
+                spin = -length * 0.5
+            } else {
+                spin = length * 0.5
+            }
+            player.physicsBody?.angularVelocity = spin
         }
     }
 

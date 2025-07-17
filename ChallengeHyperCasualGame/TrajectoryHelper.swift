@@ -12,7 +12,7 @@ enum TrajectoryHelper {
         clear(in: scene)
 
         var position = scene.player.position
-        var velocity = CGVector(dx: (currentPos.x - startPos.x) * 4, dy: 800)
+        var velocity = CGVector(dx: (startPos.x - currentPos.x), dy: (startPos.y - currentPos.y))
         let gravity = scene.physicsWorld.gravity
         let timeStep: CGFloat = 0.1
         let damping: CGFloat = 0.8
@@ -38,7 +38,7 @@ enum TrajectoryHelper {
             position.y += velocity.dy * timeStep
 
             if position.x <= scene.frame.minX || position.x >= scene.frame.maxX {
-                velocity.dx = -velocity.dx * damping
+                velocity.dx = velocity.dx * damping
             }
 
             if position.y < scene.frame.minY { break }
