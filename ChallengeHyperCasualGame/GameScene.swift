@@ -134,6 +134,5 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
         return false
->>>>>>> amel
     }
 }
