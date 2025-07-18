@@ -27,6 +27,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var lastPlatformX: CGFloat = 0
     var trajectoryNodes: [SKShapeNode] = []
     var currentPlatform: SKSpriteNode?
+    var platformCounts: Int = 0
 
     var startPos: CGPoint?
     var currentPos: CGPoint?
@@ -34,6 +35,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let maxTrajectoryPoints = 20
     let playerCategory: UInt32 = 0x1 << 0
     let platformCategory: UInt32 = 0x1 << 1
+    let bounceWallCategory: UInt32 = 0x1 << 2
 
     var lastUpdateTime: TimeInterval = 0
     var deltaTime: TimeInterval = 0
@@ -206,8 +208,37 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 } while abs(x - lastPlatformX) < 80
 
                 let y = (platforms.last?.position.y ?? 0) + 200
-                let newPlatform = createPlatform(at: CGPoint(x: x, y: y))
-                platforms.append(newPlatform)
+
+                let randomWidth = CGFloat.random(in: 60...120)
+                let type: PlatformType = {
+                    let rand = Int.random(in: 0...10)
+                    if rand < 7 {
+                        return .normal
+                    } else if rand < 8 {
+                        return .moving
+                    } else {
+                        return .collapsed
+                    }
+                }()
+
+                let newPlatform = createPlatform(
+                    at: CGPoint(x: x, y: y),
+                    type: type,
+                    width: randomWidth
+                )
+                
+                if type == .normal {
+                    if Int.random(in: 0...10) > 5 {
+                        if let previous = platforms.last {  // previous platform before adding
+                            let smartWall = createSmartWall(
+                                near: newPlatform.position,
+                                currentPlatformPos: previous.position
+                            )
+                            addChild(smartWall)
+                        }
+                    }
+                }
+                platforms.append(newPlatform)  // Append AFTER using platforms.last
                 lastPlatformX = x
             }
         }
@@ -311,8 +342,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         body.restitution = 0.0
         body.allowsRotation = true
         body.categoryBitMask = playerCategory
-        body.contactTestBitMask = platformCategory
-        body.collisionBitMask = platformCategory
+        body.contactTestBitMask = platformCategory | bounceWallCategory
+        body.collisionBitMask = platformCategory | bounceWallCategory
 
         player.physicsBody = body
         addChild(player)
@@ -390,13 +421,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
             let randomWidth = CGFloat.random(in: 60...120)
             let type: PlatformType = {
-                let rand = Int.random(in: 0...10)
-                if rand < 6 {
+                if platformCounts < 10 {
                     return .normal
-                } else if rand < 9 {
-                    return .moving
                 } else {
-                    return .collapsed
+                    let rand = Int.random(in: 0...10)
+                    if rand < 6 {
+                        return .normal
+                    } else if rand < 9 {
+                        return .moving
+                    } else {
+                        return .collapsed
+                    }
                 }
             }()
 
@@ -515,4 +550,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
 
+    func createSmartWall(near targetPlatformPos: CGPoint, currentPlatformPos: CGPoint) -> SKSpriteNode {
+        print("Target:", targetPlatformPos.x, "Current:", currentPlatformPos.x)
+        let wall = SKSpriteNode(color: .magenta, size: CGSize(width: 10, height: 100))
+        wall.name = "smartWall"
+        let isleft = targetPlatformPos.x < currentPlatformPos.x
+        wall.position = CGPoint(x: targetPlatformPos.x + (isleft ? 50 : 100), y: targetPlatformPos.y + (isleft ? -10 : 100))
+        wall.physicsBody = SKPhysicsBody(rectangleOf: wall.size)
+        wall.physicsBody?.isDynamic = false
+        
+        wall.physicsBody?.categoryBitMask = bounceWallCategory
+        wall.physicsBody?.collisionBitMask = playerCategory
+        wall.physicsBody?.contactTestBitMask = playerCategory
+        
+        return wall
+    }
 }
