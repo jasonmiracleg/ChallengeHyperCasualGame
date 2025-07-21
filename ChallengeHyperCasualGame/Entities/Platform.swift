@@ -7,7 +7,7 @@
 
 import SpriteKit
 
-enum PlatformFactory {
+enum Platform {
     static func createPlatform(at position: CGPoint, in scene: SKScene) -> SKSpriteNode {
         let platform = SKSpriteNode(color: .brown, size: CGSize(width: 100, height: 20))
         platform.position = position

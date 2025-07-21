@@ -7,7 +7,7 @@
 
 import SpriteKit
 
-enum PlayerFactory {
+enum Player {
     static func createPlayer(in scene: SKScene) -> SKShapeNode {
         let player = SKShapeNode(
             rectOf: CGSize(width: 20, height: 40),

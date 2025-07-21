@@ -7,7 +7,7 @@
 
 import SpriteKit
 
-enum RestartButtonFactory {
+enum RestartButton {
     static func create(in scene: SKScene) -> SKLabelNode {
         let button = SKLabelNode(text: "Restart")
         button.fontName = "AvenirNext-Bold"

@@ -8,7 +8,7 @@
 
 import SpriteKit
 
-enum CameraFactory {
+enum Camera {
     static func createCamera(for scene: SKScene) -> SKCameraNode {
         let camera = SKCameraNode()
         camera.position = CGPoint(x: scene.frame.midX, y: scene.frame.midY)

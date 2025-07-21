@@ -7,7 +7,7 @@
 
 import SpriteKit
 
-enum WallManager {
+enum Wall {
     static func createWalls(in scene: GameScene) -> (SKNode, SKNode) {
         let leftWall = SKNode()
         leftWall.physicsBody = SKPhysicsBody(edgeFrom: CGPoint(x: 0, y: 0), to: CGPoint(x: 0, y: scene.frame.height))
