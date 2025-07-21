@@ -9,9 +9,8 @@ import GameplayKit
 import SpriteKit
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
-    
     // player
-    var player: Player
+    var player: Player!
     let playerCategory: UInt32 = 0x1 << 0
     
     // platforms
@@ -38,13 +37,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var startJumpPosition: CGPoint?
     var score: UInt32 = 0
     var scoreLabel: SKLabelNode!
+    
+    override init(size: CGSize) {
+        super.init(size: size)
+        // Do not access self.view or add nodes here; use didMove(to:) instead
+    }
+
+    required init?(coder aDecoder: NSCoder) {
+        super.init(coder: aDecoder)
+    }
 
     override func didMove(to view: SKView) {
         physicsWorld.gravity = CGVector(dx: 0, dy: -9.8)
         backgroundColor = .cyan
 
         camera = Camera.createCamera(for: self)
-        player = Player.createPlayer(in: self)
+        player = Player(in: self)
         platforms = Platform.createInitialPlatforms(in: self)
         restartButton = RestartButton.create(in: self)
         (leftWall, rightWall) = Wall.createWalls(in: self)
@@ -55,18 +63,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
         jumpDirection = location.x < frame.midX ? -1 : 1
-        startPos = location
-        TrajectoryHelper.show(from: startPos!, to: location, in: self)
+        dragStartPos = location
+        TrajectoryHelper.show(from: dragStartPos!, to: location, in: self)
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
-        currentPos = touch.location(in: self)
-        TrajectoryHelper.show(from: startPos!, to: currentPos!, in: self)
+        dragCurrentPos = touch.location(in: self)
+        TrajectoryHelper.show(from: dragStartPos!, to: dragCurrentPos!, in: self)
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first, let start = startPos else { return }
+        guard let touch = touches.first, let start = dragStartPos else { return }
         let location = touch.location(in: self)
 
         if nodes(at: location).contains(where: { $0.name == "restartButton" }) {
@@ -74,10 +82,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             return
         }
 
-        player.handleJumpOrSpin(startPos: start, endPos: location)
+        player.handleJumpOrSpin(from: start, to: location)
         TrajectoryHelper.clear(in: self)
         jumpDirection = 0
-        startPos = nil
+        dragStartPos = nil
     }
 
     override func update(_ currentTime: TimeInterval) {
@@ -88,7 +96,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             in: self,
             lastPlatformX: &lastPlatformX
         )
-        Player.wrapAroundEdges(player: player, in: self)
+        player.wrapAroundEdges(in: self)
 
         let velocity = player.physicsBody?.velocity ?? .zero
         if abs(velocity.dy) == 0.0 && isPlayerOnPlatform() {
