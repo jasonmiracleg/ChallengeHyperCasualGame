@@ -33,11 +33,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         physicsWorld.gravity = CGVector(dx: 0, dy: -9.8)
         backgroundColor = .cyan
 
-        camera = CameraFactory.createCamera(for: self)
-        player = PlayerFactory.createPlayer(in: self)
-        platforms = PlatformFactory.createInitialPlatforms(in: self)
-        restartButton = RestartButtonFactory.create(in: self)
-        (leftWall, rightWall) = WallManager.createWalls(in: self)
+        camera = Camera.createCamera(for: self)
+        player = Player.createPlayer(in: self)
+        platforms = Platform.createInitialPlatforms(in: self)
+        restartButton = RestartButton.create(in: self)
+        (leftWall, rightWall) = Wall.createWalls(in: self)
         createScoreLabel()
     }
 
@@ -64,10 +64,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             return
         }
 
-        PlayerFactory.handleJumpOrSpin(
+        Player.handleJumpOrSpin(
             player: player,
             startPos: start,
-            endPos: location,
+            endPos: location
         )
         TrajectoryHelper.clear(in: self)
         jumpDirection = 0
@@ -75,14 +75,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     override func update(_ currentTime: TimeInterval) {
-        CameraFactory.follow(player: player, camera: camera, scene: self)
-        WallManager.updateWalls(in: self)
-        platforms = PlatformFactory.cleanupAndGenerate(
+        Camera.follow(player: player, camera: camera, scene: self)
+        Wall.updateWalls(in: self)
+        platforms = Platform.cleanupAndGenerate(
             platforms: platforms,
             in: self,
             lastPlatformX: &lastPlatformX
         )
-        PlayerFactory.wrapAroundEdges(player: player, in: self)
+        Player.wrapAroundEdges(player: player, in: self)
 
         let velocity = player.physicsBody?.velocity ?? .zero
         if abs(velocity.dy) == 0.0 && isPlayerOnPlatform() {
