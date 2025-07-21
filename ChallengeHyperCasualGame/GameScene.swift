@@ -231,7 +231,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     if Int.random(in: 0...10) > 5 {
                         if let previous = platforms.last {  // previous platform before adding
                             let smartWall = createSmartWall(
-                                near: newPlatform.position,
+                                near: newPlatform,
                                 currentPlatformPos: previous.position
                             )
                             addChild(smartWall)
@@ -550,15 +550,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
 
-    func createSmartWall(near targetPlatformPos: CGPoint, currentPlatformPos: CGPoint) -> SKSpriteNode {
-        print("Target:", targetPlatformPos.x, "Current:", currentPlatformPos.x)
-        let wall = SKSpriteNode(color: .magenta, size: CGSize(width: 10, height: 100))
+    func createSmartWall(near targetPlatformPos: SKSpriteNode, currentPlatformPos: CGPoint) -> SKSpriteNode {
+        let wall = SKSpriteNode(color: .magenta, size: CGSize(width: 10, height: 120))
         wall.name = "smartWall"
-        let isleft = targetPlatformPos.x < currentPlatformPos.x
-        wall.position = CGPoint(x: targetPlatformPos.x + (isleft ? 50 : 100), y: targetPlatformPos.y + (isleft ? -10 : 100))
+        
+        let platformWidth = targetPlatformPos.size.width
+        let platformX = targetPlatformPos.position.x
+        let platformY = targetPlatformPos.position.y
+        
+        // Determine if current platform is to the left or right of target
+        let isLeft = platformX < currentPlatformPos.x
+        
+        // Wall X: attach to far side of the platform (backboard) + 10-point gap
+        let offsetX: CGFloat = platformX + (isLeft ? -(platformWidth / 2 + 10) : (platformWidth / 2 + 10))
+        
+        // Wall Y: slightly above the platform (like a backboard)
+        let offsetY: CGFloat = platformY + 80
+        
+        wall.position = CGPoint(x: offsetX, y: offsetY)
+        
         wall.physicsBody = SKPhysicsBody(rectangleOf: wall.size)
         wall.physicsBody?.isDynamic = false
-        
+        wall.physicsBody?.restitution = 1.0
         wall.physicsBody?.categoryBitMask = bounceWallCategory
         wall.physicsBody?.collisionBitMask = playerCategory
         wall.physicsBody?.contactTestBitMask = playerCategory
