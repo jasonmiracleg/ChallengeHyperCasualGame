@@ -9,22 +9,32 @@ import GameplayKit
 import SpriteKit
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
-    var player: SKShapeNode!
+    
+    // player
+    var player: Player
+    let playerCategory: UInt32 = 0x1 << 0
+    
+    // platforms
     var platforms: [SKSpriteNode] = []
-    var jumpDirection: CGFloat = 0
-    var restartButton: SKLabelNode!
-    var lastTapTime: TimeInterval = 0
+    let platformCategory: UInt32 = 0x1 << 1
+    var lastPlatformX: CGFloat = 0
+    
+    // frame
     var leftWall: SKNode!
     var rightWall: SKNode!
-    var lastPlatformX: CGFloat = 0
-    var trajectoryNodes: [SKShapeNode] = []
-    var startPos: CGPoint?
-    var currentPos: CGPoint?
-
+    
+    // launch
+    var jumpDirection: CGFloat = 0
+    var lastTapTime: TimeInterval = 0
+    var dragStartPos: CGPoint?
+    var dragCurrentPos: CGPoint?
+    
+    // trajectory
     let maxTrajectoryPoints = 20
-    let playerCategory: UInt32 = 0x1 << 0
-    let platformCategory: UInt32 = 0x1 << 1
-
+    var trajectoryNodes: [SKShapeNode] = []
+    
+    // misc
+    var restartButton: SKLabelNode!
     var startJumpPosition: CGPoint?
     var score: UInt32 = 0
     var scoreLabel: SKLabelNode!
@@ -64,11 +74,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             return
         }
 
-        Player.handleJumpOrSpin(
-            player: player,
-            startPos: start,
-            endPos: location
-        )
+        player.handleJumpOrSpin(startPos: start, endPos: location)
         TrajectoryHelper.clear(in: self)
         jumpDirection = 0
         startPos = nil
