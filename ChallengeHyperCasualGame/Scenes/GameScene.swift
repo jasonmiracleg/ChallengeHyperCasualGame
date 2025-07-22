@@ -38,8 +38,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var score: UInt32 = 0
     var scoreLabel: SKLabelNode!
     
-    //background
+    //background and asset
     var backgroundManager: BackgroundManager!
+    var decorationSpawner: DecorationSpawner!
     
     override init(size: CGSize) {
         super.init(size: size)
@@ -52,6 +53,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func didMove(to view: SKView) {
         physicsWorld.gravity = CGVector(dx: 0, dy: -9.8)
         backgroundManager = BackgroundManager(in: self)
+        decorationSpawner = DecorationSpawner(in: self)
         
         camera = Camera.createCamera(for: self)
         player = Player(in: self)
@@ -149,6 +151,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
         backgroundManager.update(playerY: player.position.y)
+        decorationSpawner.update(playerY: player.position.y)
     }
     
     func createScoreLabel() {

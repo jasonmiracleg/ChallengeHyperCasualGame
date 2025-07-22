@@ -144,11 +144,7 @@ class Player: SKNode {
     
     func flyBoost() {
         guard let body = self.physicsBody else { return }
-
-        // Give the bottle a strong upward velocity
         body.velocity = CGVector(dx: 0, dy: 1600)
-
-        // Optional: Give a little spin
         body.angularVelocity = CGFloat.random(in: -2.0...2.0)
     }
 
