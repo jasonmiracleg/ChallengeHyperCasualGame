@@ -7,51 +7,49 @@
 
 import SpriteKit
 
-class Player : SKNode {
+class Player: SKNode {
     
-    let bottleBody: SKShapeNode
-    let bottleCap: SKShapeNode
+    let bottleBody: SKSpriteNode
+    let bottleCap: SKSpriteNode
     let topSensor: SKNode
     let bottomSensor: SKNode
     
     init(in scene: SKScene) {
-        // Dimensions
-        let bodySize = CGSize(width: 20, height: 40)
-        let capSize = CGSize(width: 10, height: 5)
-        
-        // Make Shapes
-        bottleBody = SKShapeNode(rectOf: bodySize, cornerRadius: 6)
-        bottleCap = SKShapeNode(rectOf: capSize)
+        bottleBody = SKSpriteNode(imageNamed: "bottle_body")
+        bottleCap = SKSpriteNode(imageNamed: "bottle_cap")
         
         bottomSensor = SKNode()
         topSensor = SKNode()
-
+        
         super.init()
         
         self.position = CGPoint(x: scene.frame.midX, y: 100)
+        bottleBody.zPosition = 10
+        bottleCap.zPosition = 11
+        
+        let scaleFactor: CGFloat = 0.15
+        bottleBody.setScale(scaleFactor)
+        bottleCap.setScale(scaleFactor)
         
         setupBottleBody()
-        setupBottleCap(offsetY: bodySize.height/2 + capSize.height/2)
-        setupPhysics(size: bodySize)
-        setupPhysics(size: bodySize)
+        setupBottleCap()
+        setupPhysics(size: bottleBody.size)
+        setupSensors(size: bottleBody.size)
         
         self.addChild(bottleBody)
         self.addChild(bottleCap)
         self.addChild(bottomSensor)
         self.addChild(topSensor)
-
+        
         scene.addChild(self)
     }
     
     private func setupBottleBody() {
-        bottleBody.fillColor = .gray
-        bottleBody.strokeColor = .clear
         bottleBody.position = .zero
     }
     
-    private func setupBottleCap(offsetY: CGFloat) {
-        bottleCap.fillColor = .darkGray
-        bottleCap.strokeColor = .clear
+    private func setupBottleCap() {
+        let offsetY = bottleBody.size.height / 2 + bottleCap.size.height / 2
         bottleCap.position = CGPoint(x: 0, y: offsetY)
     }
     
@@ -64,12 +62,11 @@ class Player : SKNode {
         physicsBody.categoryBitMask = 0x1 << 0
         physicsBody.contactTestBitMask = 0x1 << 1
         physicsBody.collisionBitMask = 0x1 << 1
-
+        
         self.physicsBody = physicsBody
     }
     
     private func setupSensors(size: CGSize) {
-        // Bottom sensor
         bottomSensor.position = CGPoint(x: 0, y: -size.height / 2)
         let bottomPhysics = SKPhysicsBody(rectangleOf: CGSize(width: size.width * 0.8, height: 2))
         bottomPhysics.isDynamic = false
@@ -79,8 +76,7 @@ class Player : SKNode {
         bottomPhysics.collisionBitMask = 0
         bottomPhysics.usesPreciseCollisionDetection = true
         bottomSensor.physicsBody = bottomPhysics
-
-        // Top sensor
+        
         topSensor.position = CGPoint(x: 0, y: size.height / 2)
         let topPhysics = SKPhysicsBody(rectangleOf: CGSize(width: size.width * 0.8, height: 2))
         topPhysics.isDynamic = false
@@ -91,55 +87,45 @@ class Player : SKNode {
         topPhysics.usesPreciseCollisionDetection = true
         topSensor.physicsBody = topPhysics
     }
-
+    
     func handleJump(from startPos: CGPoint, to endPos: CGPoint) {
         guard let body = self.physicsBody else { return }
-
+        
         let velocity = body.velocity
         let speedThreshold: CGFloat = 1
         let isIdle = abs(velocity.dy) < speedThreshold
-
+        
         if isIdle {
             let dx = endPos.x - startPos.x
             let dy = endPos.y - startPos.y
             
             let velocityX = -dx * 4
             let velocityY = min(-dy * 7, 1300)
-
+            
             body.velocity = CGVector(dx: velocityX, dy: velocityY)
             
-            var spin = 0.0
-            if dx > 0 {
-                spin = dx * 0.1
-            } else {
-                spin = dx * 0.1
-            }
+            let spin = dx * 0.1
             body.angularVelocity = spin
         }
     }
     
     func handleSpin(from startPos: CGPoint, to endPos: CGPoint) {
         guard let body = self.physicsBody else { return }
-
+        
         let velocity = body.velocity
         let speedThreshold: CGFloat = 1
         let isIdle = abs(velocity.dy) < speedThreshold
-
+        
         if isIdle {
             let dx = startPos.x - endPos.x
             let dy = startPos.y - endPos.y
             
             let velocityX = dx * 4
             let velocityY = min(dy * 7, 1300)
-
+            
             body.velocity = CGVector(dx: velocityX, dy: velocityY)
             
-            var spin = 0.0
-            if dx > 0 {
-                spin = dx * 0.1
-            } else {
-                spin = dx * 0.1
-            }
+            let spin = dx * 0.1
             body.angularVelocity = spin
         }
     }
@@ -155,4 +141,15 @@ class Player : SKNode {
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+    
+    func flyBoost() {
+        guard let body = self.physicsBody else { return }
+
+        // Give the bottle a strong upward velocity
+        body.velocity = CGVector(dx: 0, dy: 1600)
+
+        // Optional: Give a little spin
+        body.angularVelocity = CGFloat.random(in: -2.0...2.0)
+    }
+
 }
