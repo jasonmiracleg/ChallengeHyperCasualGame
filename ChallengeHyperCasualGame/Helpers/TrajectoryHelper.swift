@@ -11,6 +11,70 @@ enum TrajectoryHelper {
     static func show(from startPos: CGPoint, to currentPos: CGPoint, in scene: GameScene) {
         clear(in: scene)
 
+//        var position = scene.player.position
+//                var velocity = CGVector(dx: (currentPos.x - startPos.x) * 4, dy: 800)
+//        let gravity = scene.physicsWorld.gravity
+//                let timeStep: CGFloat = 0.1
+//                let bounceDamping: CGFloat = 0.8
+//
+//        for i in 0..<scene.maxTrajectoryPoints {
+//                    let dot = SKShapeNode(circleOfRadius: 4)
+//                    dot.fillColor = SKColor(
+//                        red: 1.0,
+//                        green: 0.8,
+//                        blue: 0.2,
+//                        alpha: 1.0 - (CGFloat(i) / CGFloat(scene.maxTrajectoryPoints))
+//                    )
+//                    dot.strokeColor = .clear
+//                    dot.zPosition = 5
+//                    dot.position = position
+//
+//                    let pulseAction = SKAction.repeatForever(
+//                        SKAction.sequence([
+//                            SKAction.scale(to: 1.2, duration: 0.3),
+//                            SKAction.scale(to: 1.0, duration: 0.3),
+//                        ])
+//                    )
+//                    dot.run(pulseAction)
+//            scene.addChild(dot)
+//            scene.trajectoryNodes.append(dot)
+//
+//                    // Apply gravity
+//                    velocity.dx += gravity.dx * timeStep
+//                    velocity.dy += gravity.dy * timeStep
+//                    position.x += velocity.dx * timeStep
+//                    position.y += velocity.dy * timeStep
+//
+//                    // Existing bounce logic in showTrajectory …
+//            if position.x <= scene.frame.minX {
+//                position.x = scene.frame.minX
+//                        velocity.dx = -velocity.dx * bounceDamping
+//
+//                        // ⬇️  Add this right here
+//                        dot.run(
+//                            SKAction.sequence([
+//                                SKAction.scale(to: 1.5, duration: 0.1),
+//                                SKAction.scale(to: 1.0, duration: 0.1),
+//                            ])
+//                        )
+//            } else if position.x >= scene.frame.maxX {
+//                position.x = scene.frame.maxX
+//                        velocity.dx = -velocity.dx * bounceDamping
+//
+//                        // ⬇️  And here for the right wall
+//                        dot.run(
+//                            SKAction.sequence([
+//                                SKAction.scale(to: 1.5, duration: 0.1),
+//                                SKAction.scale(to: 1.0, duration: 0.1),
+//                            ])
+//                        )
+//                    }
+//
+//                    // Stop drawing if out of vertical bounds
+//            if position.y < scene.frame.minY {
+//                        break
+//                    }
+//                }
         var position = scene.player.position
         var velocity = CGVector(dx: (startPos.x - currentPos.x), dy: (startPos.y - currentPos.y))
         let gravity = scene.physicsWorld.gravity

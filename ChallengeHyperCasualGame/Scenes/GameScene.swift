@@ -24,6 +24,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let maxTrajectoryPoints = 20
     let playerCategory: UInt32 = 0x1 << 0
     let platformCategory: UInt32 = 0x1 << 1
+    let wallCategory: UInt32 = 0x1 << 2
 
     var startJumpPosition: CGPoint?
     var score: UInt32 = 0
