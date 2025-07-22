@@ -75,6 +75,7 @@ enum TrajectoryHelper {
 //                        break
 //                    }
 //                }
+        
         var position = scene.player.position
         var velocity = CGVector(dx: (startPos.x - currentPos.x), dy: (startPos.y - currentPos.y))
         let gravity = scene.physicsWorld.gravity

@@ -49,6 +49,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     override func didMove(to view: SKView) {
+        physicsWorld.contactDelegate = self
         physicsWorld.gravity = CGVector(dx: 0, dy: -9.8)
         backgroundColor = .cyan
 
@@ -58,6 +59,45 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         restartButton = RestartButton.create(in: self)
         (leftWall, rightWall) = Wall.createWalls(in: self)
         createScoreLabel()
+    }
+    
+    func didBegin(_ contact: SKPhysicsContact) {
+        let bodyA = contact.bodyA.node
+        let bodyB = contact.bodyB.node
+
+        // Ensure one is the player and the other is a platform
+        if let playerNode = bodyA as? Player, let platform = bodyB as? SKSpriteNode {
+            handlePlatformContact(platform)
+        } else if let playerNode = bodyB as? Player, let platform = bodyA as? SKSpriteNode {
+            handlePlatformContact(platform)
+        }
+    }
+    
+    func didEnd(_ contact: SKPhysicsContact) {
+        let bodyA = contact.bodyA.node
+        let bodyB = contact.bodyB.node
+
+        if let platform = bodyA as? SKSpriteNode, platform.name == "moving" {
+            platform.userData?["isStopped"] = false
+        } else if let platform = bodyB as? SKSpriteNode, platform.name == "moving" {
+            platform.userData?["isStopped"] = false
+        }
+    }
+    
+    private func handlePlatformContact(_ platform: SKSpriteNode) {
+        if let type = platform.userData?["type"] as? PlatformType {
+            switch type {
+            case .collapsed:
+                if platform.userData?["collapseStarted"] == nil {
+                    platform.userData?["collapseStarted"] = true
+                    Platform.collapse(platform)
+                }
+            case .moving:
+                platform.userData?["isStopped"] = true
+            default:
+                break
+            }
+        }
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -112,6 +152,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 startJumpPosition = player.position
             }
         }
+        
+        Platform.updateMovingPlatforms(in: self)
     }
 
     func createScoreLabel() {

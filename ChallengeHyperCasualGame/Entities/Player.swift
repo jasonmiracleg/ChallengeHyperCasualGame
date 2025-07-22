@@ -62,8 +62,8 @@ class Player : SKNode {
         physicsBody.restitution = 0.0
         physicsBody.allowsRotation = true
         physicsBody.categoryBitMask = 0x1 << 0
-        physicsBody.contactTestBitMask = 0x1 << 1
-        physicsBody.collisionBitMask = 0x1 << 1
+        physicsBody.contactTestBitMask = 0x1 << 1 | 0x1 << 2
+        physicsBody.collisionBitMask = 0x1 << 1 | 0x1 << 2
 
         self.physicsBody = physicsBody
     }
@@ -94,6 +94,31 @@ class Player : SKNode {
 
     func handleJump(from startPos: CGPoint, to endPos: CGPoint) {
         guard let body = self.physicsBody else { return }
+//        
+//        let velocity = body.velocity
+//        print("Velocity: \(velocity)")
+//
+//        let speedThreshold: CGFloat = 1
+//        let isIdle = abs(velocity.dy) < speedThreshold
+//
+//        // Calculate jump strength from horizontal drag distance
+//        let dx = endPos.x - startPos.x
+//        let jumpStrengthX = dx * 4  // Adjust the multiplier as needed
+//        let jumpStrengthY: CGFloat = 1200
+//
+//        if isIdle {
+//            // Apply jump
+//            body.velocity = CGVector(
+//                dx: jumpStrengthX,
+//                dy: jumpStrengthY
+//            )
+//        } else {
+//            // Apply mid-air spin
+//            let spinBoost = max(1.0, 10.0 - 5.0)
+//            physicsBody?.angularVelocity = spinBoost
+//        }
+
+        
         let velocity = body.velocity
         let speedThreshold: CGFloat = 1
         let isIdle = abs(velocity.dy) < speedThreshold

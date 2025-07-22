@@ -20,7 +20,7 @@ enum Camera {
         guard let camera = camera else { return }
 
         let lowestPlatformY = scene.platforms.map { $0.position.y }.min() ?? 0
-        let minCameraY = lowestPlatformY + 200
+        let minCameraY = lowestPlatformY + 400
 
         if player.position.y > camera.position.y {
             camera.position.y = player.position.y
