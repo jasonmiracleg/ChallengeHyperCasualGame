@@ -60,9 +60,9 @@ class Player: SKNode {
         physicsBody.restitution = 0.0
         physicsBody.allowsRotation = true
         physicsBody.categoryBitMask = 0x1 << 0
-        physicsBody.contactTestBitMask = 0x1 << 1
-        physicsBody.collisionBitMask = 0x1 << 1
-        
+        physicsBody.contactTestBitMask = 0x1 << 1 | 0x1 << 2
+        physicsBody.collisionBitMask = 0x1 << 1 | 0x1 << 2
+
         self.physicsBody = physicsBody
     }
     
@@ -91,20 +91,16 @@ class Player: SKNode {
     func handleJump(from startPos: CGPoint, to endPos: CGPoint) {
         guard let body = self.physicsBody else { return }
         
-        let velocity = body.velocity
-        let speedThreshold: CGFloat = 1
-        let isIdle = abs(velocity.dy) < speedThreshold
-        
-        if isIdle {
+        if isIdle() {
             let dx = endPos.x - startPos.x
             let dy = endPos.y - startPos.y
             
             let velocityX = -dx * 4
-            let velocityY = min(-dy * 7, 1300)
-            
+            let velocityY = min(-dy * 8, 1400)
+
             body.velocity = CGVector(dx: velocityX, dy: velocityY)
             
-            let spin = dx * 0.1
+            let spin = dx * 0.15
             body.angularVelocity = spin
         }
     }
@@ -112,21 +108,18 @@ class Player: SKNode {
     func handleSpin(from startPos: CGPoint, to endPos: CGPoint) {
         guard let body = self.physicsBody else { return }
         
-        let velocity = body.velocity
-        let speedThreshold: CGFloat = 1
-        let isIdle = abs(velocity.dy) < speedThreshold
+        let angularVelocity = body.angularVelocity
         
-        if isIdle {
-            let dx = startPos.x - endPos.x
-            let dy = startPos.y - endPos.y
+        if !isIdle() {
+            var spinBoost: CGFloat = 0
             
-            let velocityX = dx * 4
-            let velocityY = min(dy * 7, 1300)
+            if endPos.x < startPos.x {
+                spinBoost = angularVelocity + 5
+            } else {
+                spinBoost = angularVelocity - 5
+            }
             
-            body.velocity = CGVector(dx: velocityX, dy: velocityY)
-            
-            let spin = dx * 0.1
-            body.angularVelocity = spin
+            body.angularVelocity = spinBoost
         }
     }
     
@@ -135,6 +128,18 @@ class Player: SKNode {
             position.x = scene.frame.width + 50
         } else if position.x > scene.frame.width + 50 {
             position.x = -50
+        }
+    }
+    
+    func isIdle() -> Bool {
+        guard let body = self.physicsBody else { return false}
+
+        let velocity = body.velocity
+        let speedThreshold: CGFloat = 1
+        if abs(velocity.dy) < speedThreshold {
+            return true
+        } else {
+            return false
         }
     }
     

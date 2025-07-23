@@ -12,26 +12,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // player
     var player: Player!
     let playerCategory: UInt32 = 0x1 << 0
-    
+
     // platforms
     var platforms: [SKSpriteNode] = []
     let platformCategory: UInt32 = 0x1 << 1
+    let wallCategory: UInt32 = 0x1 << 2
     var lastPlatformX: CGFloat = 0
-    
+
     // frame
     var leftWall: SKNode!
     var rightWall: SKNode!
-    
+
     // launch
     var jumpDirection: CGFloat = 0
     var lastTapTime: TimeInterval = 0
     var dragStartPos: CGPoint?
     var dragCurrentPos: CGPoint?
-    
+
     // trajectory
     let maxTrajectoryPoints = 20
     var trajectoryNodes: [SKShapeNode] = []
-    
+
     // misc
     var restartButton: SKLabelNode!
     var startJumpPosition: CGPoint?
@@ -51,6 +52,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     override func didMove(to view: SKView) {
+        physicsWorld.contactDelegate = self
         physicsWorld.gravity = CGVector(dx: 0, dy: -9.8)
         backgroundManager = BackgroundManager(in: self)
         decorationSpawner = DecorationSpawner(in: self)
@@ -66,7 +68,52 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         (leftWall, rightWall) = Wall.createWalls(in: self)
         createScoreLabel()
     }
-    
+
+    func didBegin(_ contact: SKPhysicsContact) {
+        let bodyA = contact.bodyA.node
+        let bodyB = contact.bodyB.node
+
+        // Ensure one is the player and the other is a platform
+        if let playerNode = bodyA as? Player,
+            let platform = bodyB as? SKSpriteNode
+        {
+            handlePlatformContact(platform)
+        } else if let playerNode = bodyB as? Player,
+            let platform = bodyA as? SKSpriteNode
+        {
+            handlePlatformContact(platform)
+        }
+    }
+
+    func didEnd(_ contact: SKPhysicsContact) {
+        let bodyA = contact.bodyA.node
+        let bodyB = contact.bodyB.node
+
+        if let platform = bodyA as? SKSpriteNode, platform.name == "moving" {
+            platform.userData?["isStopped"] = false
+        } else if let platform = bodyB as? SKSpriteNode,
+            platform.name == "moving"
+        {
+            platform.userData?["isStopped"] = false
+        }
+    }
+
+    private func handlePlatformContact(_ platform: SKSpriteNode) {
+        if let type = platform.userData?["type"] as? PlatformType {
+            switch type {
+            case .collapsed:
+                if platform.userData?["collapseStarted"] == nil {
+                    platform.userData?["collapseStarted"] = true
+                    Platform.collapse(platform)
+                }
+            case .moving:
+                platform.userData?["isStopped"] = true
+            default:
+                break
+            }
+        }
+    }
+
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
@@ -78,7 +125,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         dragCurrentPos = touch.location(in: self)
-        TrajectoryHelper.show(from: dragStartPos!, to: dragCurrentPos!, in: self)
+        TrajectoryHelper.show(
+            from: dragStartPos!,
+            to: dragCurrentPos!,
+            in: self
+        )
     }
     
 //    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -97,7 +148,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 //    }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first, let start = dragStartPos else { return }
+        guard let touch = touches.first, let start = dragStartPos else {
+            return
+        }
         let location = touch.location(in: self)
 
         // Restart button check
@@ -106,17 +159,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             return
         }
 
-        let currentTime = CACurrentMediaTime()
-        let timeSinceLastTap = currentTime - lastTapTime
-        lastTapTime = currentTime
-
-        if timeSinceLastTap < 0.3 {
-            // Detected double-tap, perform fly boost
-            player.flyBoost()
-            TrajectoryHelper.clear(in: self)
-            dragStartPos = nil
-            jumpDirection = 0
-            return
+        if player.isIdle() {
+            player.handleJump(from: start, to: location)
+        } else {
+            player.handleSpin(from: start, to: location)
         }
 
         // Single-tap drag jump
@@ -150,6 +196,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 startJumpPosition = player.position
             }
         }
+
+        Platform.updateMovingPlatforms(in: self)
         backgroundManager.update(playerY: player.position.y)
         decorationSpawner.update(playerY: player.position.y)
     }
