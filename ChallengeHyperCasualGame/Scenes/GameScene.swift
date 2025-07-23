@@ -59,6 +59,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         restartButton = RestartButton.create(in: self)
         (leftWall, rightWall) = Wall.createWalls(in: self)
         createScoreLabel()
+
+        // Swipe (drag)
+        let panGesture = UIPanGestureRecognizer(
+            target: self,
+            action: #selector(handlePan(_:))
+        )
+        view.addGestureRecognizer(panGesture)
+
+        // Tap (untuk restart button)
+        let tapGesture = UITapGestureRecognizer(
+            target: self,
+            action: #selector(handleTap(_:))
+        )
+        view.addGestureRecognizer(tapGesture)
     }
     
     func didBegin(_ contact: SKPhysicsContact) {
@@ -117,12 +131,94 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first, let start = dragStartPos else { return }
         let location = touch.location(in: self)
+    //    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+    //        guard let touch = touches.first else { return }
+    //        let location = touch.location(in: self)
+    //        jumpDirection = location.x < frame.midX ? -1 : 1
+    //        dragStartPos = location
+    //        TrajectoryHelper.show(from: dragStartPos!, to: location, in: self)
+    //    }
+    //
+    //    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+    //        guard let touch = touches.first else { return }
+    //        dragCurrentPos = touch.location(in: self)
+    //        TrajectoryHelper.show(
+    //            from: dragStartPos!,
+    //            to: dragCurrentPos!,
+    //            in: self
+    //        )
+    //    }
+    //
+    //    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+    //        guard let touch = touches.first, let start = dragStartPos else {
+    //            return
+    //        }
+    //        let location = touch.location(in: self)
+    //
+    //        if nodes(at: location).contains(where: { $0.name == "restartButton" }) {
+    //            SceneRestarter.restart(scene: self)
+    //            return
+    //        }
+    //
+    //        if player.isIdle() {
+    //            player.handleJump(from: start, to: location)
+    //        } else {
+    //            player.handleSpin(from: start, to: location)
+    //        }
+    //
+    //        TrajectoryHelper.clear(in: self)
+    //        jumpDirection = 0
+    //        dragStartPos = nil
+    //    }
+
+    @objc func handleTap(_ gesture: UITapGestureRecognizer) {
+        guard let view = self.view else { return }
+        let viewLocation = gesture.location(in: view)
+        let location = convertPoint(fromView: viewLocation)
 
         if nodes(at: location).contains(where: { $0.name == "restartButton" }) {
             SceneRestarter.restart(scene: self)
             return
         }
+    }
 
+    @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
+        guard let view = self.view else { return }
+        let viewLocation = gesture.location(in: view)
+        let location = convertPoint(fromView: viewLocation)
+
+        switch gesture.state {
+        case .began:
+            dragStartPos = location
+            jumpDirection = location.x < frame.midX ? -1 : 1
+//            if player.isIdle() {
+//                TrajectoryHelper.show(from: dragStartPos!, to: location, in: self)
+//            }
+
+        case .changed:
+            dragCurrentPos = location
+            guard let start = dragStartPos else { return }
+            if player.isIdle() {
+                TrajectoryHelper.show(from: start, to: location, in: self)
+            }
+
+        case .ended, .cancelled:
+            guard let start = dragStartPos else { return }
+
+            if player.isIdle() {
+                player.handleJump(from: start, to: location)
+            } else {
+                player.handleSpin(from: start, to: location)
+            }
+
+            TrajectoryHelper.clear(in: self)
+            dragStartPos = nil
+            dragCurrentPos = nil
+            jumpDirection = 0
+
+        default:
+            break
+        }
         player.handleJump(from: start, to: location)
         TrajectoryHelper.clear(in: self)
         jumpDirection = 0

@@ -94,77 +94,36 @@ class Player : SKNode {
 
     func handleJump(from startPos: CGPoint, to endPos: CGPoint) {
         guard let body = self.physicsBody else { return }
-//        
-//        let velocity = body.velocity
-//        print("Velocity: \(velocity)")
-//
-//        let speedThreshold: CGFloat = 1
-//        let isIdle = abs(velocity.dy) < speedThreshold
-//
-//        // Calculate jump strength from horizontal drag distance
-//        let dx = endPos.x - startPos.x
-//        let jumpStrengthX = dx * 4  // Adjust the multiplier as needed
-//        let jumpStrengthY: CGFloat = 1200
-//
-//        if isIdle {
-//            // Apply jump
-//            body.velocity = CGVector(
-//                dx: jumpStrengthX,
-//                dy: jumpStrengthY
-//            )
-//        } else {
-//            // Apply mid-air spin
-//            let spinBoost = max(1.0, 10.0 - 5.0)
-//            physicsBody?.angularVelocity = spinBoost
-//        }
-
         
-        let velocity = body.velocity
-        let speedThreshold: CGFloat = 1
-        let isIdle = abs(velocity.dy) < speedThreshold
-
-        if isIdle {
+        if isIdle() {
             let dx = endPos.x - startPos.x
             let dy = endPos.y - startPos.y
             
             let velocityX = -dx * 4
-            let velocityY = min(-dy * 7, 1300)
+            let velocityY = min(-dy * 8, 1400)
 
             body.velocity = CGVector(dx: velocityX, dy: velocityY)
             
-            var spin = 0.0
-            if dx > 0 {
-                spin = dx * 0.1
-            } else {
-                spin = dx * 0.1
-            }
+            let spin = dx * 0.15
             body.angularVelocity = spin
         }
     }
     
     func handleSpin(from startPos: CGPoint, to endPos: CGPoint) {
         guard let body = self.physicsBody else { return }
-
-        let velocity = body.velocity
-        let speedThreshold: CGFloat = 1
-        let isIdle = abs(velocity.dy) < speedThreshold
-
-        if isIdle {
-            let dx = startPos.x - endPos.x
-            let dy = startPos.y - endPos.y
+        
+        let angularVelocity = body.angularVelocity
+        
+        if !isIdle() {
+            var spinBoost: CGFloat = 0
             
-            let velocityX = dx * 4
-            let velocityY = min(dy * 7, 1300)
-
-            body.velocity = CGVector(dx: velocityX, dy: velocityY)
-            
-            var spin = 0.0
-            if dx > 0 {
-                spin = dx * 0.1
+            if endPos.x < startPos.x {
+                spinBoost = angularVelocity + 5
             } else {
-                spin = dx * 0.1
+                spinBoost = angularVelocity - 5
             }
-            body.angularVelocity = spin
+            
+            body.angularVelocity = spinBoost
         }
     }
     
@@ -173,6 +132,18 @@ class Player : SKNode {
             position.x = scene.frame.width + 50
         } else if position.x > scene.frame.width + 50 {
             position.x = -50
+        }
+    }
+    
+    func isIdle() -> Bool {
+        guard let body = self.physicsBody else { return false}
+
+        let velocity = body.velocity
+        let speedThreshold: CGFloat = 1
+        if abs(velocity.dy) < speedThreshold {
+            return true
+        } else {
+            return false
         }
     }
     
