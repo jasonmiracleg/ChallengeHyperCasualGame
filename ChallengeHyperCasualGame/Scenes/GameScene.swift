@@ -70,7 +70,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         let categoryA = PhysicsCategory(rawValue: contact.bodyA.categoryBitMask)
         let categoryB = PhysicsCategory(rawValue: contact.bodyB.categoryBitMask)
-
+        
         // Handle Player <-> Platform
         if categoryA.contains(.player) && categoryB.contains(.platform),
            let platform = nodeB as? SKSpriteNode {
@@ -79,6 +79,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                   let platform = nodeA as? SKSpriteNode {
             handlePlatformContact(playerNode: nodeB, platform: platform, contact: contact)
         }
+        
     }
 
     func didEnd(_ contact: SKPhysicsContact) {
@@ -120,7 +121,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     print("Stopped moving platform")
                     platform.userData?["isStopped"] = true
                 default:
-                    break
+                    let dustParticle = Particles.createDustEmitter()
+                    applyParticles(particle: dustParticle, object: playerNode)
                 }
             }
         } else {
@@ -259,5 +261,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
         return false
+    }
+    
+    private func applyParticles(particle: SKEmitterNode, object: SKNode) {
+        particle.position = CGPoint(x: object.position.x, y: object.position.y)
+        addChild(particle)
+        
+        particle.run(SKAction.sequence([
+            SKAction.wait(forDuration: 1.0),
+            SKAction.removeFromParent()
+        ]))
     }
 }
