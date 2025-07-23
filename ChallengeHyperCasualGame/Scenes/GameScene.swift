@@ -132,12 +132,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         case .began:
             dragStartPos = location
             jumpDirection = location.x < frame.midX ? -1 : 1
-            TrajectoryHelper.show(from: dragStartPos!, to: location, in: self)
+//            if player.isIdle() {
+//                TrajectoryHelper.show(from: dragStartPos!, to: location, in: self)
+//            }
 
         case .changed:
             dragCurrentPos = location
             guard let start = dragStartPos else { return }
-            TrajectoryHelper.show(from: start, to: location, in: self)
+            if player.isIdle() {
+                TrajectoryHelper.show(from: start, to: location, in: self)
+            }
 
         case .ended, .cancelled:
             guard let start = dragStartPos else { return }

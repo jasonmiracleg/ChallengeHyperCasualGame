@@ -104,7 +104,7 @@ class Player : SKNode {
 
             body.velocity = CGVector(dx: velocityX, dy: velocityY)
             
-            let spin = dx * 0.1
+            let spin = dx * 0.15
             body.angularVelocity = spin
         }
     }
@@ -117,7 +117,7 @@ class Player : SKNode {
         if !isIdle() {
             var spinBoost: CGFloat = 0
             
-            if endPos.x > startPos.x {
+            if endPos.x < startPos.x {
                 spinBoost = angularVelocity + 5
             } else {
                 spinBoost = angularVelocity - 5

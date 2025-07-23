@@ -12,10 +12,10 @@ enum TrajectoryHelper {
         clear(in: scene)
 
         var position = scene.player.position
-        var velocity = CGVector(dx: (startPos.x - currentPos.x), dy: (startPos.y - currentPos.y))
+        var velocity = CGVector(dx: (startPos.x - currentPos.x), dy: (startPos.y - currentPos.y) * 0.9)
         let gravity = scene.physicsWorld.gravity
         let timeStep: CGFloat = 0.1
-        let damping: CGFloat = 0.8
+        let damping: CGFloat = 0.9
 
         for i in 0..<scene.maxTrajectoryPoints {
             let dot = SKShapeNode(circleOfRadius: 4)
