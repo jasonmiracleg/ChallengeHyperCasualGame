@@ -7,10 +7,10 @@
 
 import SpriteKit
 
-class Player : SKNode {
+class Player: SKNode {
     
-    let bottleBody: SKShapeNode
-    let bottleCap: SKShapeNode
+    let bottleBody: SKSpriteNode
+    let bottleCap: SKSpriteNode
     let topSensor: SKNode
     let bottomSensor: SKNode
     
@@ -19,16 +19,22 @@ class Player : SKNode {
         let bodySize = CGSize(width: 20, height: 40)
         let capSize = CGSize(width: 10, height: 5)
         
-        // Make Shapes
-        bottleBody = SKShapeNode(rectOf: bodySize, cornerRadius: 6)
-        bottleCap = SKShapeNode(rectOf: capSize)
+        
+        bottleBody = SKSpriteNode(imageNamed: "bottle_body")
+        bottleCap = SKSpriteNode(imageNamed: "bottle_cap")
         
         bottomSensor = SKNode()
         topSensor = SKNode()
-
+        
         super.init()
         
         self.position = CGPoint(x: scene.frame.midX, y: 100)
+        bottleBody.zPosition = 10
+        bottleCap.zPosition = 11
+        
+        let scaleFactor: CGFloat = 0.15
+        bottleBody.setScale(scaleFactor)
+        bottleCap.setScale(scaleFactor)
         
         setupBottleBody()
         setupBottleCap(offsetY: bodySize.height/2 + capSize.height/2, size: capSize)
@@ -39,21 +45,19 @@ class Player : SKNode {
         self.addChild(bottleCap)
         self.addChild(bottomSensor)
         self.addChild(topSensor)
-
+        
         scene.addChild(self)
     }
     
     private func setupBottleBody() {
-        bottleBody.fillColor = .gray
-        bottleBody.strokeColor = .clear
         bottleBody.position = .zero
     }
     
     private func setupBottleCap(offsetY: CGFloat, size: CGSize) {
-            bottleCap.fillColor = .darkGray
-            bottleCap.strokeColor = .red // Use red outline for visibility
-            bottleCap.lineWidth = 1
-            bottleCap.zPosition = 1
+//            bottleCap.fillColor = .darkGray
+//            bottleCap.strokeColor = .red // Use red outline for visibility
+//            bottleCap.lineWidth = 1
+//            bottleCap.zPosition = 1
             
             // Centered path so that the shape aligns correctly with the physics body
             let rect = CGRect(
@@ -62,7 +66,7 @@ class Player : SKNode {
                 width: size.width,
                 height: size.height
             )
-        bottleCap.path = CGPath(rect: rect, transform: nil)
+//        bottleCap.path = CGPath(rect: rect, transform: nil)
             
         // Position cap visually at the same Y offset as its physics body center
         bottleCap.position = CGPoint(x: 0, y: offsetY)
@@ -98,7 +102,6 @@ class Player : SKNode {
 
     
     private func setupSensors(size: CGSize) {
-        // Bottom sensor
         bottomSensor.position = CGPoint(x: 0, y: -size.height / 2)
         let bottomPhysics = SKPhysicsBody(rectangleOf: CGSize(width: size.width * 0.8, height: 2))
         bottomPhysics.isDynamic = false
@@ -108,8 +111,7 @@ class Player : SKNode {
         bottomPhysics.collisionBitMask = 0
         bottomPhysics.usesPreciseCollisionDetection = true
         bottomSensor.physicsBody = bottomPhysics
-
-        // Top sensor
+        
         topSensor.position = CGPoint(x: 0, y: size.height / 2)
         let topPhysics = SKPhysicsBody(rectangleOf: CGSize(width: size.width * 0.8, height: 2))
         topPhysics.isDynamic = false
@@ -120,6 +122,7 @@ class Player : SKNode {
         topPhysics.usesPreciseCollisionDetection = true
         topSensor.physicsBody = topPhysics
     }
+
     func handleJump(from startPos: CGPoint, to endPos: CGPoint) {
         guard let body = self.physicsBody else { return }
         
@@ -170,4 +173,11 @@ class Player : SKNode {
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+    
+    func flyBoost() {
+        guard let body = self.physicsBody else { return }
+        body.velocity = CGVector(dx: 0, dy: 1600)
+        body.angularVelocity = CGFloat.random(in: -2.0...2.0)
+    }
+
 }
