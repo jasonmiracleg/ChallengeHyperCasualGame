@@ -12,33 +12,33 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // player
     var player: Player!
     let playerCategory: UInt32 = 0x1 << 0
-    
+
     // platforms
     var platforms: [SKSpriteNode] = []
     let platformCategory: UInt32 = 0x1 << 1
     let wallCategory: UInt32 = 0x1 << 2
     var lastPlatformX: CGFloat = 0
-    
+
     // frame
     var leftWall: SKNode!
     var rightWall: SKNode!
-    
+
     // launch
     var jumpDirection: CGFloat = 0
     var lastTapTime: TimeInterval = 0
     var dragStartPos: CGPoint?
     var dragCurrentPos: CGPoint?
-    
+
     // trajectory
     let maxTrajectoryPoints = 20
     var trajectoryNodes: [SKShapeNode] = []
-    
+
     // misc
     var restartButton: SKLabelNode!
     var startJumpPosition: CGPoint?
     var score: UInt32 = 0
     var scoreLabel: SKLabelNode!
-    
+
     override init(size: CGSize) {
         super.init(size: size)
         // Do not access self.view or add nodes here; use didMove(to:) instead
@@ -59,45 +59,37 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         restartButton = RestartButton.create(in: self)
         (leftWall, rightWall) = Wall.createWalls(in: self)
         createScoreLabel()
-
-        // Swipe (drag)
-        let panGesture = UIPanGestureRecognizer(
-            target: self,
-            action: #selector(handlePan(_:))
-        )
-        view.addGestureRecognizer(panGesture)
-
-        // Tap (untuk restart button)
-        let tapGesture = UITapGestureRecognizer(
-            target: self,
-            action: #selector(handleTap(_:))
-        )
-        view.addGestureRecognizer(tapGesture)
     }
-    
+
     func didBegin(_ contact: SKPhysicsContact) {
         let bodyA = contact.bodyA.node
         let bodyB = contact.bodyB.node
 
         // Ensure one is the player and the other is a platform
-        if let playerNode = bodyA as? Player, let platform = bodyB as? SKSpriteNode {
+        if let playerNode = bodyA as? Player,
+            let platform = bodyB as? SKSpriteNode
+        {
             handlePlatformContact(platform)
-        } else if let playerNode = bodyB as? Player, let platform = bodyA as? SKSpriteNode {
+        } else if let playerNode = bodyB as? Player,
+            let platform = bodyA as? SKSpriteNode
+        {
             handlePlatformContact(platform)
         }
     }
-    
+
     func didEnd(_ contact: SKPhysicsContact) {
         let bodyA = contact.bodyA.node
         let bodyB = contact.bodyB.node
 
         if let platform = bodyA as? SKSpriteNode, platform.name == "moving" {
             platform.userData?["isStopped"] = false
-        } else if let platform = bodyB as? SKSpriteNode, platform.name == "moving" {
+        } else if let platform = bodyB as? SKSpriteNode,
+            platform.name == "moving"
+        {
             platform.userData?["isStopped"] = false
         }
     }
-    
+
     private func handlePlatformContact(_ platform: SKSpriteNode) {
         if let type = platform.userData?["type"] as? PlatformType {
             switch type {
@@ -125,101 +117,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         dragCurrentPos = touch.location(in: self)
-        TrajectoryHelper.show(from: dragStartPos!, to: dragCurrentPos!, in: self)
+        TrajectoryHelper.show(
+            from: dragStartPos!,
+            to: dragCurrentPos!,
+            in: self
+        )
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first, let start = dragStartPos else { return }
+        guard let touch = touches.first, let start = dragStartPos else {
+            return
+        }
         let location = touch.location(in: self)
-    //    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-    //        guard let touch = touches.first else { return }
-    //        let location = touch.location(in: self)
-    //        jumpDirection = location.x < frame.midX ? -1 : 1
-    //        dragStartPos = location
-    //        TrajectoryHelper.show(from: dragStartPos!, to: location, in: self)
-    //    }
-    //
-    //    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-    //        guard let touch = touches.first else { return }
-    //        dragCurrentPos = touch.location(in: self)
-    //        TrajectoryHelper.show(
-    //            from: dragStartPos!,
-    //            to: dragCurrentPos!,
-    //            in: self
-    //        )
-    //    }
-    //
-    //    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-    //        guard let touch = touches.first, let start = dragStartPos else {
-    //            return
-    //        }
-    //        let location = touch.location(in: self)
-    //
-    //        if nodes(at: location).contains(where: { $0.name == "restartButton" }) {
-    //            SceneRestarter.restart(scene: self)
-    //            return
-    //        }
-    //
-    //        if player.isIdle() {
-    //            player.handleJump(from: start, to: location)
-    //        } else {
-    //            player.handleSpin(from: start, to: location)
-    //        }
-    //
-    //        TrajectoryHelper.clear(in: self)
-    //        jumpDirection = 0
-    //        dragStartPos = nil
-    //    }
-
-    @objc func handleTap(_ gesture: UITapGestureRecognizer) {
-        guard let view = self.view else { return }
-        let viewLocation = gesture.location(in: view)
-        let location = convertPoint(fromView: viewLocation)
 
         if nodes(at: location).contains(where: { $0.name == "restartButton" }) {
             SceneRestarter.restart(scene: self)
             return
         }
-    }
 
-    @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
-        guard let view = self.view else { return }
-        let viewLocation = gesture.location(in: view)
-        let location = convertPoint(fromView: viewLocation)
-
-        switch gesture.state {
-        case .began:
-            dragStartPos = location
-            jumpDirection = location.x < frame.midX ? -1 : 1
-//            if player.isIdle() {
-//                TrajectoryHelper.show(from: dragStartPos!, to: location, in: self)
-//            }
-
-        case .changed:
-            dragCurrentPos = location
-            guard let start = dragStartPos else { return }
-            if player.isIdle() {
-                TrajectoryHelper.show(from: start, to: location, in: self)
-            }
-
-        case .ended, .cancelled:
-            guard let start = dragStartPos else { return }
-
-            if player.isIdle() {
-                player.handleJump(from: start, to: location)
-            } else {
-                player.handleSpin(from: start, to: location)
-            }
-
-            TrajectoryHelper.clear(in: self)
-            dragStartPos = nil
-            dragCurrentPos = nil
-            jumpDirection = 0
-
-        default:
-            break
+        if player.isIdle() {
+            player.handleJump(from: start, to: location)
+        } else {
+            player.handleSpin(from: start, to: location)
         }
-        player.handleJump(from: start, to: location)
+
         TrajectoryHelper.clear(in: self)
         jumpDirection = 0
         dragStartPos = nil
@@ -248,7 +169,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 startJumpPosition = player.position
             }
         }
-        
+
         Platform.updateMovingPlatforms(in: self)
     }
 
