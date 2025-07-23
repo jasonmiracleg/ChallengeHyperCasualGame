@@ -17,11 +17,6 @@ enum PlatformType {
 enum Platform {
     private static var platformCounts: Int = 0
     private static let platformWidths = [100, 120, 140]
-    //    static func createPlatform(at position: CGPoint, in scene: SKScene) -> SKSpriteNode {
-    //        let texture = SKTexture(imageNamed: "small_platform")
-    //        let platform = SKSpriteNode(texture: texture)
-    //        platform.setScale(0.12)
-    
     
     // MARK: - Create Single Platform
     static func createPlatform(
@@ -31,17 +26,10 @@ enum Platform {
         height: CGFloat = 20,
         in scene: GameScene
     ) -> SKSpriteNode {
-        //        let texture = SKTexture(imageNamed: "small_platform")
-        //        let platform = SKSpriteNode(texture: texture)
-        //        platform.setScale(0.12)
         let platform = SKSpriteNode(color: .brown, size: CGSize(width: width, height: height))
         platform.position = position
         
-        //        let hitboxSize = CGSize(width: platform.size.width * 0.8, height: platform.size.height * 0.3)
-        //        let hitboxOffset = CGPoint(x: 0, y: -platform.size.height * 0.1)
-        
         let body = SKPhysicsBody(rectangleOf: platform.size)
-        //        let body = SKPhysicsBody(rectangleOf: hitboxSize, center: hitboxOffset)
         platform.userData = ["type": type]
         platform.userData = ["hasBeenLandedOn": false]
         
@@ -58,7 +46,6 @@ enum Platform {
             platform.color = .red
             
         }
-        
         
         body.isDynamic = false
         body.categoryBitMask = PhysicsCategory.platform.rawValue
@@ -78,10 +65,16 @@ enum Platform {
         var platforms: [SKSpriteNode] = []
         var lastX = scene.frame.midX
         
+        let fixedPlatformPositions: [CGPoint] = [
+            CGPoint(x: scene.frame.midX + 100, y: 200),
+            CGPoint(x: scene.frame.midX - 100, y: 200),
+            CGPoint(x: scene.frame.midX + 100, y: 200),
+            CGPoint(x: scene.frame.midX - 100, y: 200)
+        ]
+        
         for i in 0..<10 {
-            var y = CGFloat(i) * 200 + 50
+            var y = CGFloat(i) * 200 + 100
             var randomWidth = platformWidths.randomElement()!
-            let halfWidth = CGFloat(randomWidth) / 2
             var height = 20
             var x: CGFloat
             
@@ -90,7 +83,14 @@ enum Platform {
                 y = scene.frame.minY + (20 / 2)
                 randomWidth = Int(scene.frame.width)
                 height = 100
+            } else if i <= fixedPlatformPositions.count {
+                let fixedPosition = fixedPlatformPositions[i-1]
+                x = fixedPosition.x
+                y = fixedPosition.y * CGFloat(i) + 100
+                randomWidth = i < fixedPlatformPositions.count ? platformWidths[i-1] : platformWidths[2]
             } else {
+                // Random placement
+                let halfWidth = CGFloat(randomWidth) / 2
                 x = platformPlacement(scene: scene, lastX: lastX, halfWidth: halfWidth)
             }
             
