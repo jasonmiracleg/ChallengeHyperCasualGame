@@ -11,17 +11,12 @@ import SpriteKit
 class GameScene: SKScene, SKPhysicsContactDelegate {
     // player
     var player: Player!
-    let playerCategory: UInt32 = 0x1 << 0
 
     // platforms
     var platforms: [SKSpriteNode] = []
-    let platformCategory: UInt32 = 0x1 << 1
+    let platformCategory = PhysicsCategory.platform.rawValue
     let wallCategory: UInt32 = 0x1 << 2
     var lastPlatformX: CGFloat = 0
-
-    // frame
-    var leftWall: SKNode!
-    var rightWall: SKNode!
 
     // launch
     var jumpDirection: CGFloat = 0
@@ -57,7 +52,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         player = Player(in: self)
         platforms = Platform.createInitialPlatforms(in: self)
         restartButton = RestartButton.create(in: self)
-        (leftWall, rightWall) = Wall.createWalls(in: self)
+        Wall.createWalls(in: self)
         createScoreLabel()
     }
 
@@ -154,7 +149,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             in: self,
             lastPlatformX: &lastPlatformX
         )
-        player.wrapAroundEdges(in: self)
 
         let velocity = player.physicsBody?.velocity ?? .zero
         if abs(velocity.dy) == 0.0 && isPlayerOnPlatform() {

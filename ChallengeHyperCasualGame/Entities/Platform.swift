@@ -23,12 +23,13 @@ enum Platform {
         type: PlatformType = .normal,
         width: CGFloat = 100,
         height: CGFloat = 20,
-        in scene: GameScene,
+        in scene: GameScene
     ) -> SKSpriteNode {
         
         let platform = SKSpriteNode(color: .brown, size: CGSize(width: width, height: height))
         platform.position = position
         platform.userData = ["type": type]
+        platform.userData = ["hasBeenLandedOn": false]
         
         switch type {
         case .normal:
@@ -46,9 +47,9 @@ enum Platform {
 
         let body = SKPhysicsBody(rectangleOf: platform.size)
         body.isDynamic = false
-        body.categoryBitMask = scene.platformCategory
-        body.contactTestBitMask = scene.playerCategory
-        body.collisionBitMask = scene.playerCategory
+        body.categoryBitMask = PhysicsCategory.platform.rawValue
+        body.contactTestBitMask = PhysicsCategory.player.rawValue | PhysicsCategory.topSensor.rawValue
+        body.collisionBitMask = PhysicsCategory.player.rawValue | PhysicsCategory.topSensor.rawValue
         body.friction = 1.0
         platform.physicsBody = body
         
