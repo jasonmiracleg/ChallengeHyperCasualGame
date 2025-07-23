@@ -119,17 +119,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let location = touch.location(in: self)
         jumpDirection = location.x < frame.midX ? -1 : 1
         dragStartPos = location
-        TrajectoryHelper.show(from: dragStartPos!, to: location, in: self)
+        if player.isIdle() {
+            TrajectoryHelper.show(
+                from: dragStartPos!,
+                to: dragCurrentPos!,
+                in: self
+            )
+        }
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         dragCurrentPos = touch.location(in: self)
-        TrajectoryHelper.show(
-            from: dragStartPos!,
-            to: dragCurrentPos!,
-            in: self
-        )
+        if player.isIdle() {
+            TrajectoryHelper.show(
+                from: dragStartPos!,
+                to: dragCurrentPos!,
+                in: self
+            )
+        }
     }
     
 //    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
