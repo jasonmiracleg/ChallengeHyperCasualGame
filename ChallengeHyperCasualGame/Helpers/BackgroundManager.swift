@@ -54,14 +54,12 @@ class BackgroundManager {
     func update(playerY: CGFloat) {
         guard let scene = scene else { return }
 
-        // Remove background if completely off-screen
         if let first = backgrounds.first,
            first.position.y + first.size.height < playerY - scene.size.height {
             first.removeFromParent()
             backgrounds.removeFirst()
         }
 
-        // Add new background if needed
         if let last = backgrounds.last,
            last.position.y + last.size.height < playerY + scene.size.height * 2 {
             

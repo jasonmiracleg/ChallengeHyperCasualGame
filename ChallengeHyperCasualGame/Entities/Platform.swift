@@ -17,61 +17,133 @@ enum PlatformType {
 enum Platform {
     private static var platformCounts: Int = 0
     private static let platformWidths = [100, 120, 140]
-    //    static func createPlatform(at position: CGPoint, in scene: SKScene) -> SKSpriteNode {
-    //        let texture = SKTexture(imageNamed: "small_platform")
-    //        let platform = SKSpriteNode(texture: texture)
-    //        platform.setScale(0.12)
-    
     
     // MARK: - Create Single Platform
+    //    static func createPlatform(
+    //        at position: CGPoint,
+    //        type: PlatformType = .normal,
+    //        width: CGFloat = 100,
+    //        height: CGFloat = 20,
+    //        in scene: GameScene,
+    //    ) -> SKSpriteNode {
+    //
+    //        let platform = SKSpriteNode(color: .brown, size: CGSize(width: width, height: height))
+    //        platform.position = position
+    //        //        let texture = SKTexture(imageNamed: "small_platform")
+    //        //        let platform = SKSpriteNode(texture: texture)
+    //        //        platform.setScale(0.12)
+    //        //        let hitboxSize = CGSize(width: platform.size.width * 0.8, height: platform.size.height * 0.3)
+    //        //        let hitboxOffset = CGPoint(x: 0, y: -platform.size.height * 0.1)
+    //
+    //        let body = SKPhysicsBody(rectangleOf: platform.size)
+    //        //        let body = SKPhysicsBody(rectangleOf: hitboxSize, center: hitboxOffset)
+    //        platform.userData = ["type": type]
+    //
+    //        switch type {
+    //        case .normal:
+    //            platform.name = "normal"
+    //            platform.color = .brown
+    //        case .moving:
+    //            platform.name = "moving"
+    //            platform.color = .blue
+    //            configureMovingPlatform(platform, width: width, in: scene)
+    //        case .collapsed:
+    //            platform.name = "collapsed"
+    //            platform.color = .red
+    //
+    //        }
+    //
+    //        body.isDynamic = false
+    //        body.categoryBitMask = scene.platformCategory
+    //        body.contactTestBitMask = scene.playerCategory
+    //        body.collisionBitMask = scene.playerCategory
+    //        body.friction = 1.0
+    //
+    //        platform.physicsBody = body
+    //        scene.addChild(platform)
+    //
+    //        return platform
+    //    }
+    
     static func createPlatform(
         at position: CGPoint,
         type: PlatformType = .normal,
         width: CGFloat = 100,
         height: CGFloat = 20,
         in scene: GameScene,
+        index: Int = -1
     ) -> SKSpriteNode {
-        //        let texture = SKTexture(imageNamed: "small_platform")
-        //        let platform = SKSpriteNode(texture: texture)
-        //        platform.setScale(0.12)
-        let platform = SKSpriteNode(color: .brown, size: CGSize(width: width, height: height))
+        
+        let platform: SKSpriteNode
+        
+        if index == 0 {
+            platform = SKSpriteNode(color: .brown, size: CGSize(width: width, height: CGFloat(height)))
+            platform.alpha = 0
+            platform.zPosition = -10
+        } else {
+            let textureName: String
+            switch Int(width) {
+            case 100:
+                textureName = "small_platform"
+            case 120:
+                textureName = "normal_platform"
+            case 140:
+                textureName = "long_platform"
+            default:
+                textureName = "normal_platform"
+            }
+
+            let texture = SKTexture(imageNamed: textureName)
+            let originalSize = texture.size()
+            let scale: CGFloat = 0.3
+            let scaledSize = CGSize(width: originalSize.width * scale, height: originalSize.height * scale)
+            
+            platform = SKSpriteNode(texture: texture)
+            platform.size = scaledSize
+        }
+
         platform.position = position
-        
-        //        let hitboxSize = CGSize(width: platform.size.width * 0.8, height: platform.size.height * 0.3)
-        //        let hitboxOffset = CGPoint(x: 0, y: -platform.size.height * 0.1)
-        
-        let body = SKPhysicsBody(rectangleOf: platform.size)
-        //        let body = SKPhysicsBody(rectangleOf: hitboxSize, center: hitboxOffset)
-        platform.userData = ["type": type]
-        
+        platform.zPosition = 9
+
+        if platform.userData == nil {
+            platform.userData = NSMutableDictionary()
+        }
+        platform.userData?["type"] = type
+
         switch type {
         case .normal:
             platform.name = "normal"
-            platform.color = .brown
         case .moving:
             platform.name = "moving"
-            platform.color = .blue
-            configureMovingPlatform(platform, width: width, in: scene)
+            configureMovingPlatform(platform, width: platform.size.width, in: scene)
         case .collapsed:
             platform.name = "collapsed"
-            platform.color = .red
-            
         }
-        
-        
+
+        let body: SKPhysicsBody
+        if index == 0 {
+            body = SKPhysicsBody(rectangleOf: platform.size)
+        } else {
+            let hitboxSize = CGSize(
+                width: platform.size.width * 0.8,
+                height: platform.size.height * 0.3
+            )
+            let hitboxOffset = CGPoint(x: 0, y: -platform.size.height * 0.05)
+            body = SKPhysicsBody(rectangleOf: hitboxSize, center: hitboxOffset)
+        }
+
         body.isDynamic = false
         body.categoryBitMask = scene.platformCategory
         body.contactTestBitMask = scene.playerCategory
         body.collisionBitMask = scene.playerCategory
         body.friction = 1.0
-        
+
         platform.physicsBody = body
-        
         scene.addChild(platform)
-        
+
         return platform
     }
-    
+
     // MARK: - Initial Platforms
     static func createInitialPlatforms(in scene: GameScene) -> [SKSpriteNode] {
         var platforms: [SKSpriteNode] = []
@@ -89,6 +161,9 @@ enum Platform {
                 y = scene.frame.minY + (20 / 2)
                 randomWidth = Int(scene.frame.width)
                 height = 100
+            } else if i == 1 {
+                x = platformPlacement(scene: scene, lastX: lastX, halfWidth: halfWidth)
+                y = 300
             } else {
                 x = platformPlacement(scene: scene, lastX: lastX, halfWidth: halfWidth)
             }
@@ -110,13 +185,13 @@ enum Platform {
                 }
             }()
             
-            // Create the platform
             let platform = createPlatform(
                 at: CGPoint(x: x, y: y),
                 type: type,
                 width: CGFloat(randomWidth),
                 height: CGFloat(height),
-                in: scene
+                in: scene,
+                index: i
             )
             
             // --- Wall spawning ---
