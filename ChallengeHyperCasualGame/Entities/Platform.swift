@@ -7,16 +7,16 @@
 
 import SpriteKit
 
-enum Platform {
+enum Platform {    
     static func createPlatform(at position: CGPoint, in scene: SKScene) -> SKSpriteNode {
         let platform = SKSpriteNode(color: .brown, size: CGSize(width: 100, height: 20))
         platform.position = position
 
         let body = SKPhysicsBody(rectangleOf: platform.size)
         body.isDynamic = false
-        body.categoryBitMask = 0x1 << 1
-        body.contactTestBitMask = 0x1 << 0
-        body.collisionBitMask = 0x1 << 0
+        body.categoryBitMask = PhysicsBitMasks.platform
+        body.contactTestBitMask = PhysicsBitMasks.player | PhysicsBitMasks.topSensor
+        body.collisionBitMask = PhysicsBitMasks.player | PhysicsBitMasks.topSensor
         body.friction = 1.0
 
         platform.physicsBody = body

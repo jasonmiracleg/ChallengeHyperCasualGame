@@ -8,25 +8,46 @@
 import SpriteKit
 
 enum Wall {
-    static func createWalls(in scene: GameScene) -> (SKNode, SKNode) {
+    static func createWalls(in scene: GameScene) {
         let leftWall = SKNode()
-        leftWall.physicsBody = SKPhysicsBody(edgeFrom: CGPoint(x: 0, y: 0), to: CGPoint(x: 0, y: scene.frame.height))
+        leftWall.name = "leftWall"
+        leftWall.physicsBody = SKPhysicsBody(edgeFrom: .zero,
+                                             to: CGPoint(x: 0, y: scene.frame.height))
         leftWall.physicsBody?.isDynamic = false
-        leftWall.physicsBody?.restitution = 1
+        leftWall.physicsBody?.restitution = 0.7
+        leftWall.physicsBody?.categoryBitMask = PhysicsBitMasks.wall
+        leftWall.physicsBody?.collisionBitMask = PhysicsBitMasks.player
         scene.addChild(leftWall)
 
         let rightWall = SKNode()
-        rightWall.physicsBody = SKPhysicsBody(edgeFrom: CGPoint(x: scene.frame.width, y: 0), to: CGPoint(x: scene.frame.width, y: scene.frame.height))
+        rightWall.name = "rightWall"
+        rightWall.physicsBody = SKPhysicsBody(edgeFrom: .zero,
+                                              to: CGPoint(x: 0, y: scene.frame.height))
         rightWall.physicsBody?.isDynamic = false
-        rightWall.physicsBody?.restitution = 1
+        rightWall.physicsBody?.restitution = 0.7
+        rightWall.physicsBody?.categoryBitMask = PhysicsBitMasks.wall
+        rightWall.physicsBody?.collisionBitMask = PhysicsBitMasks.player
         scene.addChild(rightWall)
 
-        return (leftWall, rightWall)
+        // Initial placement
+        positionWalls(in: scene)
     }
 
     static func updateWalls(in scene: GameScene) {
+        positionWalls(in: scene)
+    }
+
+    private static func positionWalls(in scene: GameScene) {
         guard let camY = scene.camera?.position.y else { return }
-        scene.leftWall.position.y = camY
-        scene.rightWall.position.y = camY
+
+        // These are static X edges, but Y follows the camera
+        if let leftWall = scene.childNode(withName: "leftWall") {
+            leftWall.position = CGPoint(x: 0, y: camY - scene.frame.height / 2)
+        }
+
+        if let rightWall = scene.childNode(withName: "rightWall") {
+            rightWall.position = CGPoint(x: scene.frame.width, y: camY - scene.frame.height / 2)
+        }
     }
 }
+

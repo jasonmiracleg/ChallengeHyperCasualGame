@@ -8,19 +8,27 @@
 import GameplayKit
 import SpriteKit
 
+struct PhysicsBitMasks {
+    static let player: UInt32 = 0x1 << 0
+    static let platform: UInt32 = 0x1 << 1
+    static let bottomSensor: UInt32 = 0x1 << 2
+    static let topSensor: UInt32 = 0x1 << 3
+    static let wall: UInt32 = 0x1 << 4
+}
+
 class GameScene: SKScene, SKPhysicsContactDelegate {
     // player
     var player: Player!
-    let playerCategory: UInt32 = 0x1 << 0
+    let playerBitMask: UInt32 = PhysicsBitMasks.player
     
     // platforms
     var platforms: [SKSpriteNode] = []
-    let platformCategory: UInt32 = 0x1 << 1
+    let platformBitMask: UInt32 = PhysicsBitMasks.platform
     var lastPlatformX: CGFloat = 0
     
-    // frame
-    var leftWall: SKNode!
-    var rightWall: SKNode!
+//    // frame
+//    var leftWall: SKNode!
+//    var rightWall: SKNode!
     
     // launch
     var jumpDirection: CGFloat = 0
@@ -48,6 +56,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     override func didMove(to view: SKView) {
+        physicsWorld.contactDelegate = self
         physicsWorld.gravity = CGVector(dx: 0, dy: -9.8)
         backgroundColor = .cyan
 
@@ -55,7 +64,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         player = Player(in: self)
         platforms = Platform.createInitialPlatforms(in: self)
         restartButton = RestartButton.create(in: self)
-        (leftWall, rightWall) = Wall.createWalls(in: self)
+        Wall.createWalls(in: self)
         createScoreLabel()
     }
 
@@ -96,7 +105,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             in: self,
             lastPlatformX: &lastPlatformX
         )
-        player.wrapAroundEdges(in: self)
+//        player.wrapAroundEdges(in: self)
 
         let velocity = player.physicsBody?.velocity ?? .zero
         if abs(velocity.dy) == 0.0 && isPlayerOnPlatform() {
