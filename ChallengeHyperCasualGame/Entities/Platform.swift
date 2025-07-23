@@ -31,7 +31,7 @@ enum Platform {
         
         let body = SKPhysicsBody(rectangleOf: platform.size)
         platform.userData = ["type": type]
-        platform.userData = ["hasBeenLandedOn": false]
+        platform.userData?["hasBeenLandedOn"] = false
         
         switch type {
         case .normal:
@@ -278,10 +278,13 @@ enum Platform {
         
         let rand = CGFloat.random(in: 0...1)
         if rand < normalProb {
+//            print("Type: Normal Selected")
             return .normal
         } else if rand < normalProb + movingProb {
+//            print("Type: Moving Selected")
             return .moving
         } else {
+//            print("Type: Collapsing Selected")
             return .collapsed
         }
     }
@@ -329,6 +332,7 @@ enum Platform {
     
     // MARK: - Update Moving Platforms
     static func updateMovingPlatforms(in scene: GameScene) {
+        
         let deltaTime: CGFloat = 1.0 / 60.0 // Assuming 60 FPS
         for node in scene.children where node.name == "moving" {
             guard let platform = node as? SKSpriteNode,
@@ -336,7 +340,7 @@ enum Platform {
                   let speed = platform.userData?["speed"] as? CGFloat,
                   let leftLimit = platform.userData?["leftLimit"] as? CGFloat,
                   let rightLimit = platform.userData?["rightLimit"] as? CGFloat,
-                  (platform.userData?["isStopped"] as? Bool) != true
+                  (platform.userData?["hasBeenLandedOn"] as? Bool) != true
             else { continue }
             
             platform.position.x += direction * speed * deltaTime

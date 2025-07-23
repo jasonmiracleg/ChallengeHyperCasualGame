@@ -65,18 +65,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     func didBegin(_ contact: SKPhysicsContact) {
-        let bodyA = contact.bodyA.node
-        let bodyB = contact.bodyB.node
+        guard let nodeA = contact.bodyA.node,
+              let nodeB = contact.bodyB.node else { return }
 
-        // Ensure one is the player and the other is a platform
-        if let playerNode = bodyA as? Player,
-            let platform = bodyB as? SKSpriteNode
-        {
-            handlePlatformContact(platform)
-        } else if let playerNode = bodyB as? Player,
-            let platform = bodyA as? SKSpriteNode
-        {
-            handlePlatformContact(platform)
+        let categoryA = PhysicsCategory(rawValue: contact.bodyA.categoryBitMask)
+        let categoryB = PhysicsCategory(rawValue: contact.bodyB.categoryBitMask)
+
+        // Handle Player <-> Platform
+        if categoryA.contains(.player) && categoryB.contains(.platform),
+           let platform = nodeB as? SKSpriteNode {
+            handlePlatformContact(playerNode: nodeA, platform: platform, contact: contact)
+        } else if categoryB.contains(.player) && categoryA.contains(.platform),
+                  let platform = nodeA as? SKSpriteNode {
+            handlePlatformContact(playerNode: nodeB, platform: platform, contact: contact)
         }
     }
 
@@ -93,21 +94,41 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
 
-    private func handlePlatformContact(_ platform: SKSpriteNode) {
-        if let type = platform.userData?["type"] as? PlatformType {
-            switch type {
-            case .collapsed:
-                if platform.userData?["collapseStarted"] == nil {
-                    platform.userData?["collapseStarted"] = true
-                    Platform.collapse(platform)
+    private func handlePlatformContact(playerNode: SKNode, platform: SKSpriteNode, contact: SKPhysicsContact) {
+        // Convert the contact point to the platform's local space
+        let contactInPlatform = platform.convert(contact.contactPoint, from: scene!)
+
+        let topThreshold: CGFloat = 10.0
+
+        // Check if player landed on top of the platform
+        if contactInPlatform.y >= platform.frame.size.height / 2 - topThreshold {
+            print("Player landed on top of platform")
+
+            platform.userData?["hasBeenLandedOn"] = true
+            
+            print("Type of platform: \(platform.userData?["type"])")
+            
+            if let type = platform.userData?["type"] as? PlatformType {
+                print("Type of platform: \(type)")
+                switch type {
+                case .collapsed:
+                    if platform.userData?["collapseStarted"] == nil {
+                        platform.userData?["collapseStarted"] = true
+                        Platform.collapse(platform)
+                    }
+                case .moving:
+                    print("Stopped moving platform")
+                    platform.userData?["isStopped"] = true
+                default:
+                    break
                 }
-            case .moving:
-                platform.userData?["isStopped"] = true
-            default:
-                break
             }
+        } else {
+            print("Player hit side or bottom of platform – no special logic triggered")
         }
     }
+
+
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
