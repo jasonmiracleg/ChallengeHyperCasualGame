@@ -103,10 +103,16 @@ enum Platform {
         var platforms: [SKSpriteNode] = []
         var lastX = scene.frame.midX
         
+        let fixedPlatformPositions: [CGPoint] = [
+            CGPoint(x: scene.frame.midX + 100, y: 200),
+            CGPoint(x: scene.frame.midX - 100, y: 200),
+            CGPoint(x: scene.frame.midX + 100, y: 200),
+            CGPoint(x: scene.frame.midX - 100, y: 200)
+        ]
+        
         for i in 0..<10 {
-            var y = CGFloat(i) * 200 + 50
+            var y = CGFloat(i) * 200 + 100
             var randomWidth = platformWidths.randomElement()!
-            let halfWidth = CGFloat(randomWidth) / 2
             var height = 20
             var x: CGFloat
             
@@ -115,10 +121,14 @@ enum Platform {
                 y = scene.frame.minY + (20 / 2)
                 randomWidth = Int(scene.frame.width)
                 height = 100
-            } else if i == 1 {
-                x = platformPlacement(scene: scene, lastX: lastX, halfWidth: halfWidth)
-                y = 300
+            } else if i <= fixedPlatformPositions.count {
+                let fixedPosition = fixedPlatformPositions[i-1]
+                x = fixedPosition.x
+                y = fixedPosition.y * CGFloat(i) + 100
+                randomWidth = i < fixedPlatformPositions.count ? platformWidths[i-1] : platformWidths[2]
             } else {
+                // Random placement
+                let halfWidth = CGFloat(randomWidth) / 2
                 x = platformPlacement(scene: scene, lastX: lastX, halfWidth: halfWidth)
             }
             
@@ -306,10 +316,13 @@ enum Platform {
         
         let rand = CGFloat.random(in: 0...1)
         if rand < normalProb {
+//            print("Type: Normal Selected")
             return .normal
         } else if rand < normalProb + movingProb {
+//            print("Type: Moving Selected")
             return .moving
         } else {
+//            print("Type: Collapsing Selected")
             return .collapsed
         }
     }
@@ -357,6 +370,7 @@ enum Platform {
     
     // MARK: - Update Moving Platforms
     static func updateMovingPlatforms(in scene: GameScene) {
+        
         let deltaTime: CGFloat = 1.0 / 60.0 // Assuming 60 FPS
         for node in scene.children where node.name == "moving" {
             guard let platform = node as? SKSpriteNode,
@@ -364,7 +378,7 @@ enum Platform {
                   let speed = platform.userData?["speed"] as? CGFloat,
                   let leftLimit = platform.userData?["leftLimit"] as? CGFloat,
                   let rightLimit = platform.userData?["rightLimit"] as? CGFloat,
-                  (platform.userData?["isStopped"] as? Bool) != true
+                  (platform.userData?["hasBeenLandedOn"] as? Bool) != true
             else { continue }
             
             platform.position.x += direction * speed * deltaTime
