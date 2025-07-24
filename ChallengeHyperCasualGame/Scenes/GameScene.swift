@@ -125,22 +125,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
 
-        // If overlay is visible, check if we tapped "play"
-        if let overlay = startOverlay,
-            nodes(at: location).contains(where: { $0.name == "playButton" })
-        {
-            hideStartOverlay()
+        // If overlay is visible, start the game and show trajectory
+        if startOverlay != nil {
+            hideStartOverlay()  // fade out and remove start overlay
+            dragStartPos = location
             return
         }
 
         // Normal game touch logic
-        guard startOverlay == nil else { return }  // ignore touches when overlay is active
         jumpDirection = location.x < frame.midX ? -1 : 1
         dragStartPos = location
 
-        if player.isIdle(), let start = dragStartPos,
-            let current = dragCurrentPos
-        {
+        if player.isIdle(), let start = dragStartPos, let current = dragCurrentPos {
             TrajectoryHelper.show(from: start, to: current, in: self)
         }
     }
@@ -148,7 +144,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         dragCurrentPos = touch.location(in: self)
-        
+
+        // Start overlay drag logic
+        if startOverlay != nil {
+            // Immediately hide start screen if user drags
+            hideStartOverlay()
+        }
+
         if player.isIdle(), let start = dragStartPos, let current = dragCurrentPos {
             TrajectoryHelper.show(from: start, to: current, in: self)
         }
@@ -277,37 +279,70 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         startOverlay = SKNode()
 
         let background = SKSpriteNode(
-            color: UIColor.black.withAlphaComponent(0.5),
+            color: UIColor.black.withAlphaComponent(0.2),
             size: self.size
         )
+        
         background.position = CGPoint(x: frame.midX, y: frame.midY)
         background.zPosition = 100
         startOverlay?.addChild(background)
 
-        let titleLabel = SKLabelNode(text: "My Awesome Game")
-        titleLabel.fontName = "AvenirNext-Bold"
-        titleLabel.fontSize = 60
-        titleLabel.fontColor = .white
-        titleLabel.position = CGPoint(x: frame.midX, y: frame.midY + 200)
-        titleLabel.zPosition = 101
-        startOverlay?.addChild(titleLabel)
+        let nameLabel = SKSpriteNode(imageNamed: "title_white")
+        nameLabel.position = CGPoint(x: frame.midX, y: frame.midY + 200)
+        nameLabel.size = CGSize(width: 300, height: 200)
+        nameLabel.zPosition = 101
+        startOverlay?.addChild(nameLabel)
+        
+        let scoreLabel = SKLabelNode(text: "000")
+        scoreLabel.fontName = "Arial-BoldMT"
+        scoreLabel.fontSize = 42
+        scoreLabel.setScale(1.5)
+        scoreLabel.fontColor = .white
+        scoreLabel.position = CGPoint(x: frame.midX, y: frame.midY + 25)
+        scoreLabel.zPosition = 101
+        startOverlay?.addChild(scoreLabel)
+        
+        let bestScoreLabel = SKLabelNode(text: "Best Score")
+        bestScoreLabel.fontName = "Arial-BoldMT"
+        bestScoreLabel.fontSize = 18
+        bestScoreLabel.fontColor = .white
+        bestScoreLabel.position = CGPoint(x: frame.midX, y: frame.midY)
+        bestScoreLabel.zPosition = 101
+        startOverlay?.addChild(bestScoreLabel)
 
-        let playButton = SKLabelNode(text: "Tap to Start")
-        playButton.name = "playButton"
-        playButton.fontName = "AvenirNext-Bold"
-        playButton.fontSize = 40
-        playButton.fontColor = .yellow
-        playButton.position = CGPoint(x: frame.midX, y: frame.midY - 100)
-        playButton.zPosition = 101
-        startOverlay?.addChild(playButton)
+        let gameButton = SKSpriteNode(
+            color: UIColor.white.withAlphaComponent(0),
+            size: self.size
+        )
+        gameButton.name = "playButton"
+        gameButton.position = CGPoint(x: frame.midX, y: frame.midY)
+        gameButton.zPosition = 102
+        startOverlay?.addChild(gameButton)
+        
+        let instructionLabel = SKLabelNode(text: "Drag to Start")
+        instructionLabel.fontName = "Arial-BoldMT"
+        instructionLabel.fontSize = 18
+        instructionLabel.fontColor = .white
+        instructionLabel.position = CGPoint(x: frame.midX, y: frame.midY - 100)
+        instructionLabel.zPosition = 101
+        startOverlay?.addChild(instructionLabel)
+        
+        let fadeOut = SKAction.fadeAlpha(to: 0.2, duration: 0.8)
+        let fadeIn = SKAction.fadeAlpha(to: 1.0, duration: 0.6)
+        let blinkSequence = SKAction.sequence([fadeOut, fadeIn])
+        let blinkForever = SKAction.repeatForever(blinkSequence)
+        instructionLabel.run(blinkForever)
 
         addChild(startOverlay!)
-        isPaused = true  // Pause the game until start
     }
 
     private func hideStartOverlay() {
-        startOverlay?.removeFromParent()
+        guard let overlay = startOverlay else { return }
+
+        let fadeOut = SKAction.fadeOut(withDuration: 0.5)
+        let remove = SKAction.removeFromParent()
+
+        overlay.run(SKAction.sequence([fadeOut, remove]))
         startOverlay = nil
-        isPaused = false
     }
 }
