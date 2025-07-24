@@ -11,18 +11,13 @@ import SpriteKit
 class GameScene: SKScene, SKPhysicsContactDelegate {
     // player
     var player: Player!
-    let playerCategory: UInt32 = 0x1 << 0
-    
+
     // platforms
     var platforms: [SKSpriteNode] = []
-    let platformCategory: UInt32 = 0x1 << 1
+    let platformCategory = PhysicsCategory.platform.rawValue
     let wallCategory: UInt32 = 0x1 << 2
     var lastPlatformX: CGFloat = 0
-    
-    // frame
-    var leftWall: SKNode!
-    var rightWall: SKNode!
-    
+
     // launch
     var jumpDirection: CGFloat = 0
     var lastTapTime: TimeInterval = 0
@@ -65,7 +60,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         
         restartButton = RestartButton.create(in: self)
-        (leftWall, rightWall) = Wall.createWalls(in: self)
+        Wall.createWalls(in: self)
         createScoreLabel()
     }
     
@@ -112,12 +107,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let location = touch.location(in: self)
         jumpDirection = location.x < frame.midX ? -1 : 1
         dragStartPos = location
-        
-        if player.isIdle(), let start = dragStartPos {
-            let end = dragCurrentPos ?? start
-            TrajectoryHelper.show(from: start, to: end, in: self)
+
+        if player.isIdle(), let start = dragStartPos, let current = dragCurrentPos {
+            TrajectoryHelper.show(
+                from: start,
+                to: current,
+                in: self
+            )
         }
     }
+
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
@@ -188,8 +187,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             in: self,
             lastPlatformX: &lastPlatformX
         )
-        player.wrapAroundEdges(in: self)
-        
+
         let velocity = player.physicsBody?.velocity ?? .zero
         if abs(velocity.dy) == 0.0 && isPlayerOnPlatform() {
             guard let startY = startJumpPosition?.y else {

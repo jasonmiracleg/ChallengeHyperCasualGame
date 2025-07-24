@@ -27,9 +27,9 @@ enum Obstacle {
         wall.physicsBody = SKPhysicsBody(rectangleOf: wall.size)
         wall.physicsBody?.isDynamic = false
         wall.physicsBody?.restitution = 0.8
-        wall.physicsBody?.categoryBitMask = scene.wallCategory
-        wall.physicsBody?.collisionBitMask = scene.playerCategory
-        wall.physicsBody?.contactTestBitMask = scene.playerCategory
+        wall.physicsBody?.categoryBitMask = PhysicsCategory.wall.rawValue
+        wall.physicsBody?.collisionBitMask = PhysicsCategory.player.rawValue
+        wall.physicsBody?.contactTestBitMask = PhysicsCategory.player.rawValue
         
         return wall
     }

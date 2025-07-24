@@ -15,6 +15,11 @@ class Player: SKNode {
     let bottomSensor: SKNode
     
     init(in scene: SKScene) {
+        // Dimensions
+        let bodySize = CGSize(width: 20, height: 40)
+        let capSize = CGSize(width: 10, height: 5)
+        
+        
         bottleBody = SKSpriteNode(imageNamed: "bottle_body")
         bottleCap = SKSpriteNode(imageNamed: "bottle_cap")
         
@@ -32,9 +37,9 @@ class Player: SKNode {
         bottleCap.setScale(scaleFactor)
         
         setupBottleBody()
-        setupBottleCap()
-        setupPhysics(size: bottleBody.size)
-        setupSensors(size: bottleBody.size)
+        setupBottleCap(offsetY: bodySize.height/2 + capSize.height/2, size: capSize)
+        setupPhysics(size: bodySize)
+        setupSensors(size: bodySize)
         
         self.addChild(bottleBody)
         self.addChild(bottleCap)
@@ -48,31 +53,61 @@ class Player: SKNode {
         bottleBody.position = .zero
     }
     
-    private func setupBottleCap() {
-        let offsetY = bottleBody.size.height / 2 + bottleCap.size.height / 2
+    private func setupBottleCap(offsetY: CGFloat, size: CGSize) {
+//            bottleCap.fillColor = .darkGray
+//            bottleCap.strokeColor = .red // Use red outline for visibility
+//            bottleCap.lineWidth = 1
+//            bottleCap.zPosition = 1
+            
+            // Centered path so that the shape aligns correctly with the physics body
+            let rect = CGRect(
+                x: -size.width / 2,
+                y: -size.height / 2,
+                width: size.width,
+                height: size.height
+            )
+//        bottleCap.path = CGPath(rect: rect, transform: nil)
+            
+        // Position cap visually at the same Y offset as its physics body center
         bottleCap.position = CGPoint(x: 0, y: offsetY)
     }
+
     
     private func setupPhysics(size: CGSize) {
-        let physicsBody = SKPhysicsBody(rectangleOf: size)
-        physicsBody.linearDamping = 1.0
-        physicsBody.friction = 1.0
-        physicsBody.restitution = 0.0
-        physicsBody.allowsRotation = true
-        physicsBody.categoryBitMask = 0x1 << 0
-        physicsBody.contactTestBitMask = 0x1 << 1 | 0x1 << 2
-        physicsBody.collisionBitMask = 0x1 << 1 | 0x1 << 2
+        let capSize = CGSize(width: 10, height: 5)
+        let capOffsetY: CGFloat = size.height / 2 + capSize.height / 2
 
-        self.physicsBody = physicsBody
+        // Main bottle body
+        let bottleBody = SKPhysicsBody(rectangleOf: size)
+
+        // Cap body, positioned above the bottle
+        let capBody = SKPhysicsBody(rectangleOf: capSize, center: CGPoint(x: 0, y: capOffsetY))
+
+        // Combine into one physics body
+        let combinedBody = SKPhysicsBody(bodies: [bottleBody, capBody])
+
+        // Configure
+        combinedBody.linearDamping = 1.0
+        combinedBody.friction = 1.0
+        combinedBody.restitution = 0.0
+        combinedBody.allowsRotation = true
+
+        combinedBody.categoryBitMask = PhysicsCategory.player.rawValue
+        combinedBody.contactTestBitMask = PhysicsCategory.platform.rawValue | PhysicsCategory.wall.rawValue
+        combinedBody.collisionBitMask = PhysicsCategory.platform.rawValue | PhysicsCategory.wall.rawValue
+
+        self.physicsBody = combinedBody
     }
+
+
     
     private func setupSensors(size: CGSize) {
         bottomSensor.position = CGPoint(x: 0, y: -size.height / 2)
         let bottomPhysics = SKPhysicsBody(rectangleOf: CGSize(width: size.width * 0.8, height: 2))
         bottomPhysics.isDynamic = false
         bottomPhysics.affectedByGravity = false
-        bottomPhysics.categoryBitMask = 0x1 << 2
-        bottomPhysics.contactTestBitMask = 0x1 << 1
+        bottomPhysics.categoryBitMask = PhysicsCategory.bottomSensor.rawValue
+        bottomPhysics.contactTestBitMask = PhysicsCategory.platform.rawValue | PhysicsCategory.wall.rawValue
         bottomPhysics.collisionBitMask = 0
         bottomPhysics.usesPreciseCollisionDetection = true
         bottomSensor.physicsBody = bottomPhysics
@@ -81,13 +116,13 @@ class Player: SKNode {
         let topPhysics = SKPhysicsBody(rectangleOf: CGSize(width: size.width * 0.8, height: 2))
         topPhysics.isDynamic = false
         topPhysics.affectedByGravity = false
-        topPhysics.categoryBitMask = 0x1 << 3
-        topPhysics.contactTestBitMask = 0x1 << 1
+        topPhysics.categoryBitMask = PhysicsCategory.topSensor.rawValue
+        topPhysics.contactTestBitMask = PhysicsCategory.platform.rawValue | PhysicsCategory.wall.rawValue
         topPhysics.collisionBitMask = 0
         topPhysics.usesPreciseCollisionDetection = true
         topSensor.physicsBody = topPhysics
     }
-    
+
     func handleJump(from startPos: CGPoint, to endPos: CGPoint) {
         guard let body = self.physicsBody else { return }
         
@@ -120,14 +155,6 @@ class Player: SKNode {
             }
             
             body.angularVelocity = spinBoost
-        }
-    }
-    
-    func wrapAroundEdges(in scene: SKScene) {
-        if position.x < -50 {
-            position.x = scene.frame.width + 50
-        } else if position.x > scene.frame.width + 50 {
-            position.x = -50
         }
     }
     

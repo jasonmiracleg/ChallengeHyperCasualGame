@@ -19,52 +19,6 @@ enum Platform {
     private static let platformWidths = [100, 120, 140]
     
     // MARK: - Create Single Platform
-    //    static func createPlatform(
-    //        at position: CGPoint,
-    //        type: PlatformType = .normal,
-    //        width: CGFloat = 100,
-    //        height: CGFloat = 20,
-    //        in scene: GameScene,
-    //    ) -> SKSpriteNode {
-    //
-    //        let platform = SKSpriteNode(color: .brown, size: CGSize(width: width, height: height))
-    //        platform.position = position
-    //        //        let texture = SKTexture(imageNamed: "small_platform")
-    //        //        let platform = SKSpriteNode(texture: texture)
-    //        //        platform.setScale(0.12)
-    //        //        let hitboxSize = CGSize(width: platform.size.width * 0.8, height: platform.size.height * 0.3)
-    //        //        let hitboxOffset = CGPoint(x: 0, y: -platform.size.height * 0.1)
-    //
-    //        let body = SKPhysicsBody(rectangleOf: platform.size)
-    //        //        let body = SKPhysicsBody(rectangleOf: hitboxSize, center: hitboxOffset)
-    //        platform.userData = ["type": type]
-    //
-    //        switch type {
-    //        case .normal:
-    //            platform.name = "normal"
-    //            platform.color = .brown
-    //        case .moving:
-    //            platform.name = "moving"
-    //            platform.color = .blue
-    //            configureMovingPlatform(platform, width: width, in: scene)
-    //        case .collapsed:
-    //            platform.name = "collapsed"
-    //            platform.color = .red
-    //
-    //        }
-    //
-    //        body.isDynamic = false
-    //        body.categoryBitMask = scene.platformCategory
-    //        body.contactTestBitMask = scene.playerCategory
-    //        body.collisionBitMask = scene.playerCategory
-    //        body.friction = 1.0
-    //
-    //        platform.physicsBody = body
-    //        scene.addChild(platform)
-    //
-    //        return platform
-    //    }
-    
     static func createPlatform(
         at position: CGPoint,
         type: PlatformType = .normal,
@@ -133,9 +87,9 @@ enum Platform {
         }
 
         body.isDynamic = false
-        body.categoryBitMask = scene.platformCategory
-        body.contactTestBitMask = scene.playerCategory
-        body.collisionBitMask = scene.playerCategory
+        body.categoryBitMask = PhysicsCategory.platform.rawValue
+        body.contactTestBitMask = PhysicsCategory.player.rawValue | PhysicsCategory.topSensor.rawValue
+        body.collisionBitMask = PhysicsCategory.player.rawValue | PhysicsCategory.topSensor.rawValue
         body.friction = 1.0
 
         platform.physicsBody = body
