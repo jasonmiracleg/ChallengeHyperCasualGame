@@ -13,7 +13,6 @@ enum PlatformType {
     case moving
 }
 
-
 enum Platform {
     private static var platformCounts: Int = 0
     private static let platformWidths = [100, 120, 140]
@@ -36,34 +35,61 @@ enum Platform {
             platform.zPosition = -10
         } else {
             let textureName: String
-            switch Int(width) {
-            case 100:
-                textureName = "small_platform"
-            case 120:
-                textureName = "normal_platform"
-            case 140:
-                textureName = "long_platform"
+            let widthInt = Int(width)
+            
+            switch type {
+            case .collapsed:
+                switch widthInt {
+                case 100:
+                    textureName = "small_crack_platform"
+                case 120:
+                    textureName = "normal_crack_platform"
+                case 140:
+                    textureName = "long_crack_platform"
+                default:
+                    textureName = "normal_platform_cracked"
+                }
+                
             default:
-                textureName = "normal_platform"
+                switch widthInt {
+                case 100:
+                    textureName = "small_platform"
+                case 120:
+                    textureName = "normal_platform"
+                case 140:
+                    textureName = "long_platform"
+                default:
+                    textureName = "normal_platform"
+                }
             }
-
+            
             let texture = SKTexture(imageNamed: textureName)
             let originalSize = texture.size()
-            let scale: CGFloat = 0.3
+            
+            // Determine scale factor depending on type
+            let scale: CGFloat
+            switch type {
+            case .collapsed:
+                scale = 0.1
+            default:
+                scale = 0.1
+            }
+            
             let scaledSize = CGSize(width: originalSize.width * scale, height: originalSize.height * scale)
             
             platform = SKSpriteNode(texture: texture)
             platform.size = scaledSize
+            
         }
-
+        
         platform.position = position
         platform.zPosition = 9
-
+        
         if platform.userData == nil {
             platform.userData = NSMutableDictionary()
         }
         platform.userData?["type"] = type
-
+        
         switch type {
         case .normal:
             platform.name = "normal"
@@ -73,31 +99,31 @@ enum Platform {
         case .collapsed:
             platform.name = "collapsed"
         }
-
+        
         let body: SKPhysicsBody
         if index == 0 {
             body = SKPhysicsBody(rectangleOf: platform.size)
         } else {
             let hitboxSize = CGSize(
-                width: platform.size.width * 0.8,
+                width: platform.size.width * 0.65,
                 height: platform.size.height * 0.3
             )
             let hitboxOffset = CGPoint(x: 0, y: -platform.size.height * 0.05)
             body = SKPhysicsBody(rectangleOf: hitboxSize, center: hitboxOffset)
         }
-
+        
         body.isDynamic = false
         body.categoryBitMask = PhysicsCategory.platform.rawValue
         body.contactTestBitMask = PhysicsCategory.player.rawValue | PhysicsCategory.topSensor.rawValue
         body.collisionBitMask = PhysicsCategory.player.rawValue | PhysicsCategory.topSensor.rawValue
         body.friction = 1.0
-
+        
         platform.physicsBody = body
         scene.addChild(platform)
-
+        
         return platform
     }
-
+    
     // MARK: - Initial Platforms
     static func createInitialPlatforms(in scene: GameScene) -> [SKSpriteNode] {
         var platforms: [SKSpriteNode] = []
@@ -256,45 +282,67 @@ enum Platform {
     
     // MARK: - Collapsing Platform Logic
     static func collapse(_ platform: SKNode) {
-        guard let platform = platform as? SKSpriteNode else { return }
+        guard let platform = platform as? SKSpriteNode else {
+            return
+        }
         
         let shake = SKAction.sequence([
             SKAction.moveBy(x: 5, y: 0, duration: 0.05),
             SKAction.moveBy(x: -10, y: 0, duration: 0.1),
             SKAction.moveBy(x: 15, y: 0, duration: 0.05),
             SKAction.moveBy(x: -10, y: 0, duration: 0.1),
-            SKAction.moveBy(x: 5, y: 0, duration: 0.05),
+            SKAction.moveBy(x: 5, y: 0, duration: 0.05)
         ])
         
+        let fadeOut = SKAction.fadeOut(withDuration: 0.5)
+        
         let collapseSequence = SKAction.sequence([
-            SKAction.wait(forDuration: 0.7),
+            SKAction.wait(forDuration: 0.2),
             shake,
-            SKAction.fadeOut(withDuration: 0.5)
+            fadeOut
         ])
         
         platform.run(collapseSequence) {
-            // Disable physics
             platform.physicsBody?.categoryBitMask = 0
             platform.physicsBody?.collisionBitMask = 0
             platform.physicsBody?.contactTestBitMask = 0
             platform.isHidden = true
             
-            // Regenerate after delay
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                // Reset physics
-                platform.physicsBody?.categoryBitMask = 0x1 << 1
-                platform.physicsBody?.collisionBitMask = 0x1 << 0
-                platform.physicsBody?.contactTestBitMask = 0x1 << 0
+                platform.physicsBody?.categoryBitMask = PhysicsCategory.platform.rawValue
+                platform.physicsBody?.collisionBitMask = PhysicsCategory.player.rawValue | PhysicsCategory.topSensor.rawValue
+                platform.physicsBody?.contactTestBitMask = PhysicsCategory.player.rawValue | PhysicsCategory.topSensor.rawValue
                 
-                // Reset visuals
                 platform.alpha = 1.0
                 platform.isHidden = false
-                platform.color = .red  // Reset to collapsed color
+                
+                let type = platform.userData?["type"] as? PlatformType
+                let width = Int(platform.size.width / 0.3)
+                let textureName: String
+                
+                switch type {
+                case .collapsed:
+                    switch width {
+                    case 100:
+                        textureName = "small_crack_platform"
+                    case 120:
+                        textureName = "normal_crack_platform"
+                    case 140:
+                        textureName = "long_crack_platform"
+                    default:
+                        textureName = "normal_crack_platform"
+                    }
+                    platform.texture = SKTexture(imageNamed: textureName)
+                default:
+                    break
+                }
                 
                 platform.userData?["collapseStarted"] = nil
             }
         }
     }
+    
+    
     
     // MARK: - Helpers
     static func resetPlatformCounts() {
@@ -316,13 +364,10 @@ enum Platform {
         
         let rand = CGFloat.random(in: 0...1)
         if rand < normalProb {
-//            print("Type: Normal Selected")
             return .normal
         } else if rand < normalProb + movingProb {
-//            print("Type: Moving Selected")
             return .moving
         } else {
-//            print("Type: Collapsing Selected")
             return .collapsed
         }
     }
@@ -335,7 +380,6 @@ enum Platform {
         let wallWidth: CGFloat = 10
         let safeGap: CGFloat = 100
         
-        // Prevent platforms too close to edges
         let minX = scene.frame.minX + wallWidth + halfWidth
         let maxX = scene.frame.maxX - wallWidth - halfWidth
         
