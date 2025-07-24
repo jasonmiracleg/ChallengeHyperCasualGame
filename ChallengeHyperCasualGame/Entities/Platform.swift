@@ -17,11 +17,6 @@ enum PlatformType {
 enum Platform {
     private static var platformCounts: Int = 0
     private static let platformWidths = [100, 120, 140]
-    //    static func createPlatform(at position: CGPoint, in scene: SKScene) -> SKSpriteNode {
-    //        let texture = SKTexture(imageNamed: "small_platform")
-    //        let platform = SKSpriteNode(texture: texture)
-    //        platform.setScale(0.12)
-    
     
     // MARK: - Create Single Platform
     static func createPlatform(
@@ -29,59 +24,95 @@ enum Platform {
         type: PlatformType = .normal,
         width: CGFloat = 100,
         height: CGFloat = 20,
-        in scene: GameScene
+        in scene: GameScene,
+        index: Int = -1
     ) -> SKSpriteNode {
-        //        let texture = SKTexture(imageNamed: "small_platform")
-        //        let platform = SKSpriteNode(texture: texture)
-        //        platform.setScale(0.12)
-        let platform = SKSpriteNode(color: .brown, size: CGSize(width: width, height: height))
+        
+        let platform: SKSpriteNode
+        
+        if index == 0 {
+            platform = SKSpriteNode(color: .brown, size: CGSize(width: width, height: CGFloat(height)))
+            platform.alpha = 0
+            platform.zPosition = -10
+        } else {
+            let textureName: String
+            switch Int(width) {
+            case 100:
+                textureName = "small_platform"
+            case 120:
+                textureName = "normal_platform"
+            case 140:
+                textureName = "long_platform"
+            default:
+                textureName = "normal_platform"
+            }
+
+            let texture = SKTexture(imageNamed: textureName)
+            let originalSize = texture.size()
+            let scale: CGFloat = 0.3
+            let scaledSize = CGSize(width: originalSize.width * scale, height: originalSize.height * scale)
+            
+            platform = SKSpriteNode(texture: texture)
+            platform.size = scaledSize
+        }
+
         platform.position = position
-        
-        //        let hitboxSize = CGSize(width: platform.size.width * 0.8, height: platform.size.height * 0.3)
-        //        let hitboxOffset = CGPoint(x: 0, y: -platform.size.height * 0.1)
-        
-        let body = SKPhysicsBody(rectangleOf: platform.size)
-        //        let body = SKPhysicsBody(rectangleOf: hitboxSize, center: hitboxOffset)
-        platform.userData = ["type": type]
-        platform.userData = ["hasBeenLandedOn": false]
-        
+        platform.zPosition = 9
+
+        if platform.userData == nil {
+            platform.userData = NSMutableDictionary()
+        }
+        platform.userData?["type"] = type
+
         switch type {
         case .normal:
             platform.name = "normal"
-            platform.color = .brown
         case .moving:
             platform.name = "moving"
-            platform.color = .blue
-            configureMovingPlatform(platform, width: width, in: scene)
+            configureMovingPlatform(platform, width: platform.size.width, in: scene)
         case .collapsed:
             platform.name = "collapsed"
-            platform.color = .red
-            
         }
-        
-        
+
+        let body: SKPhysicsBody
+        if index == 0 {
+            body = SKPhysicsBody(rectangleOf: platform.size)
+        } else {
+            let hitboxSize = CGSize(
+                width: platform.size.width * 0.8,
+                height: platform.size.height * 0.3
+            )
+            let hitboxOffset = CGPoint(x: 0, y: -platform.size.height * 0.05)
+            body = SKPhysicsBody(rectangleOf: hitboxSize, center: hitboxOffset)
+        }
+
         body.isDynamic = false
         body.categoryBitMask = PhysicsCategory.platform.rawValue
         body.contactTestBitMask = PhysicsCategory.player.rawValue | PhysicsCategory.topSensor.rawValue
         body.collisionBitMask = PhysicsCategory.player.rawValue | PhysicsCategory.topSensor.rawValue
         body.friction = 1.0
-        
+
         platform.physicsBody = body
-        
         scene.addChild(platform)
-        
+
         return platform
     }
-    
+
     // MARK: - Initial Platforms
     static func createInitialPlatforms(in scene: GameScene) -> [SKSpriteNode] {
         var platforms: [SKSpriteNode] = []
         var lastX = scene.frame.midX
         
+        let fixedPlatformPositions: [CGPoint] = [
+            CGPoint(x: scene.frame.midX + 100, y: 200),
+            CGPoint(x: scene.frame.midX - 100, y: 200),
+            CGPoint(x: scene.frame.midX + 100, y: 200),
+            CGPoint(x: scene.frame.midX - 100, y: 200)
+        ]
+        
         for i in 0..<10 {
-            var y = CGFloat(i) * 200 + 50
+            var y = CGFloat(i) * 200 + 100
             var randomWidth = platformWidths.randomElement()!
-            let halfWidth = CGFloat(randomWidth) / 2
             var height = 20
             var x: CGFloat
             
@@ -90,7 +121,14 @@ enum Platform {
                 y = scene.frame.minY + (20 / 2)
                 randomWidth = Int(scene.frame.width)
                 height = 100
+            } else if i <= fixedPlatformPositions.count {
+                let fixedPosition = fixedPlatformPositions[i-1]
+                x = fixedPosition.x
+                y = fixedPosition.y * CGFloat(i) + 100
+                randomWidth = i < fixedPlatformPositions.count ? platformWidths[i-1] : platformWidths[2]
             } else {
+                // Random placement
+                let halfWidth = CGFloat(randomWidth) / 2
                 x = platformPlacement(scene: scene, lastX: lastX, halfWidth: halfWidth)
             }
             
@@ -111,13 +149,13 @@ enum Platform {
                 }
             }()
             
-            // Create the platform
             let platform = createPlatform(
                 at: CGPoint(x: x, y: y),
                 type: type,
                 width: CGFloat(randomWidth),
                 height: CGFloat(height),
-                in: scene
+                in: scene,
+                index: i
             )
             
             // --- Wall spawning ---
@@ -278,10 +316,13 @@ enum Platform {
         
         let rand = CGFloat.random(in: 0...1)
         if rand < normalProb {
+//            print("Type: Normal Selected")
             return .normal
         } else if rand < normalProb + movingProb {
+//            print("Type: Moving Selected")
             return .moving
         } else {
+//            print("Type: Collapsing Selected")
             return .collapsed
         }
     }
@@ -329,6 +370,7 @@ enum Platform {
     
     // MARK: - Update Moving Platforms
     static func updateMovingPlatforms(in scene: GameScene) {
+        
         let deltaTime: CGFloat = 1.0 / 60.0 // Assuming 60 FPS
         for node in scene.children where node.name == "moving" {
             guard let platform = node as? SKSpriteNode,
@@ -336,7 +378,7 @@ enum Platform {
                   let speed = platform.userData?["speed"] as? CGFloat,
                   let leftLimit = platform.userData?["leftLimit"] as? CGFloat,
                   let rightLimit = platform.userData?["rightLimit"] as? CGFloat,
-                  (platform.userData?["isStopped"] as? Bool) != true
+                  (platform.userData?["hasBeenLandedOn"] as? Bool) != true
             else { continue }
             
             platform.position.x += direction * speed * deltaTime

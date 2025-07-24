@@ -30,7 +30,7 @@ class Player: SKNode {
         
         self.position = CGPoint(x: scene.frame.midX, y: 100)
         bottleBody.zPosition = 10
-        bottleCap.zPosition = 11
+        bottleCap.zPosition = 10
         
         let scaleFactor: CGFloat = 0.15
         bottleBody.setScale(scaleFactor)

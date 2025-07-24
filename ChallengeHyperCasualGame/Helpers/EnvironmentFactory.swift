@@ -13,15 +13,15 @@ struct EnvironmentFactory {
         let baseX = platform.position.x
         
         let environment = SKSpriteNode(imageNamed: "bottom_environment")
-        environment.setScale(0.4)
-        environment.position = CGPoint(x: baseX, y: baseY + 165)
-        environment.zPosition = -50
+        environment.setScale(0.37)
+        environment.position = CGPoint(x: baseX, y: baseY + 300)
+        environment.zPosition = 1
         scene.addChild(environment)
         
         let secondEnvironment = SKSpriteNode(imageNamed: "bottom_environment_2")
-        secondEnvironment.setScale(0.123)
-        secondEnvironment.position = CGPoint(x: baseX, y: baseY - 120)
-        secondEnvironment.zPosition = -40
+        secondEnvironment.setScale(0.125)
+        secondEnvironment.position = CGPoint(x: baseX, y: baseY + 80)
+        secondEnvironment.zPosition = 3
         scene.addChild(secondEnvironment)
     }
 }

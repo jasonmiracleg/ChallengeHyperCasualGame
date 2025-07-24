@@ -23,11 +23,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var lastTapTime: TimeInterval = 0
     var dragStartPos: CGPoint?
     var dragCurrentPos: CGPoint?
-
+    
     // trajectory
     let maxTrajectoryPoints = 20
     var trajectoryNodes: [SKShapeNode] = []
-
+    
     // misc
     var restartButton: SKLabelNode!
     var startJumpPosition: CGPoint?
@@ -68,52 +68,71 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         Wall.createWalls(in: self)
         createScoreLabel()
     }
-
+    
     func didBegin(_ contact: SKPhysicsContact) {
-        let bodyA = contact.bodyA.node
-        let bodyB = contact.bodyB.node
+        guard let nodeA = contact.bodyA.node,
+              let nodeB = contact.bodyB.node else { return }
 
-        // Ensure one is the player and the other is a platform
-        if let playerNode = bodyA as? Player,
-            let platform = bodyB as? SKSpriteNode
-        {
-            handlePlatformContact(platform)
-        } else if let playerNode = bodyB as? Player,
-            let platform = bodyA as? SKSpriteNode
-        {
-            handlePlatformContact(platform)
+        let categoryA = PhysicsCategory(rawValue: contact.bodyA.categoryBitMask)
+        let categoryB = PhysicsCategory(rawValue: contact.bodyB.categoryBitMask)
+        
+        // Handle Player <-> Platform
+        if categoryA.contains(.player) && categoryB.contains(.platform),
+           let platform = nodeB as? SKSpriteNode {
+            handlePlatformContact(playerNode: nodeA, platform: platform, contact: contact)
+        } else if categoryB.contains(.player) && categoryA.contains(.platform),
+                  let platform = nodeA as? SKSpriteNode {
+            handlePlatformContact(playerNode: nodeB, platform: platform, contact: contact)
         }
+        
     }
-
+    
     func didEnd(_ contact: SKPhysicsContact) {
         let bodyA = contact.bodyA.node
         let bodyB = contact.bodyB.node
-
+        
         if let platform = bodyA as? SKSpriteNode, platform.name == "moving" {
             platform.userData?["isStopped"] = false
-        } else if let platform = bodyB as? SKSpriteNode,
-            platform.name == "moving"
-        {
+        } else if let platform = bodyB as? SKSpriteNode, platform.name == "moving" {
             platform.userData?["isStopped"] = false
         }
     }
 
-    private func handlePlatformContact(_ platform: SKSpriteNode) {
-        if let type = platform.userData?["type"] as? PlatformType {
-            switch type {
-            case .collapsed:
-                if platform.userData?["collapseStarted"] == nil {
-                    platform.userData?["collapseStarted"] = true
-                    Platform.collapse(platform)
+    private func handlePlatformContact(playerNode: SKNode, platform: SKSpriteNode, contact: SKPhysicsContact) {
+        // Convert the contact point to the platform's local space
+        let contactInPlatform = platform.convert(contact.contactPoint, from: scene!)
+
+        let topThreshold: CGFloat = 10.0
+
+        // Check if player landed on top of the platform
+        if contactInPlatform.y >= platform.frame.size.height / 2 - topThreshold {
+            print("Player landed on top of platform")
+
+            platform.userData?["hasBeenLandedOn"] = true
+            
+            print("Type of platform: \(platform.userData?["type"])")
+            
+            if let type = platform.userData?["type"] as? PlatformType {
+                print("Type of platform: \(type)")
+                switch type {
+                case .collapsed:
+                    if platform.userData?["collapseStarted"] == nil {
+                        platform.userData?["collapseStarted"] = true
+                        Platform.collapse(platform)
+                    }
+                case .moving:
+                    print("Stopped moving platform")
+                    platform.userData?["isStopped"] = true
+                default:
+                    let dustParticle = Particles.createDustEmitter()
+                    applyParticles(particle: dustParticle, object: playerNode)
                 }
-            case .moving:
-                platform.userData?["isStopped"] = true
-            default:
-                break
             }
+        } else {
+            print("Player hit side or bottom of platform – no special logic triggered")
         }
     }
-
+    
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
@@ -134,19 +153,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         dragCurrentPos = touch.location(in: self)
-        if player.isIdle() {
-            TrajectoryHelper.show(
-                from: dragStartPos!,
-                to: dragCurrentPos!,
-                in: self
-            )
+        
+        if player.isIdle(), let start = dragStartPos, let current = dragCurrentPos {
+            TrajectoryHelper.show(from: start, to: current, in: self)
         }
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first, let start = dragStartPos else {
-            return
-        }
+        guard let touch = touches.first, let start = dragStartPos else { return }
         let location = touch.location(in: self)
 
         // Restart button check
@@ -155,13 +169,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             return
         }
 
-        if player.isIdle() {
-            player.handleJump(from: start, to: location)
-        } else {
-            player.handleSpin(from: start, to: location)
+        let currentTime = CACurrentMediaTime()
+        let timeSinceLastTap = currentTime - lastTapTime
+        lastTapTime = currentTime
+
+        if timeSinceLastTap < 0.3 {
+            player.flyBoost()
+            TrajectoryHelper.clear(in: self)
+            dragStartPos = nil
+            jumpDirection = 0
+            return
         }
 
-        // Single-tap drag jump
         player.handleJump(from: start, to: location)
         TrajectoryHelper.clear(in: self)
         jumpDirection = 0
@@ -190,7 +209,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 startJumpPosition = player.position
             }
         }
-
+        
         Platform.updateMovingPlatforms(in: self)
         backgroundManager.update(playerY: player.position.y)
         decorationSpawner.update(playerY: player.position.y)
@@ -203,7 +222,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         scoreLabel.fontColor = .white
         scoreLabel.position = CGPoint(
             x: frame.midX - 200,
-            y: camera!.position.y - 300
+            y: camera?.position.y ?? 0 - 300
         )
 
         camera?.addChild(scoreLabel)
@@ -228,5 +247,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
         return false
+    }
+    
+    private func applyParticles(particle: SKEmitterNode, object: SKNode) {
+        particle.position = CGPoint(x: object.position.x, y: object.position.y)
+        addChild(particle)
+        
+        particle.run(SKAction.sequence([
+            SKAction.wait(forDuration: 1.0),
+            SKAction.removeFromParent()
+        ]))
     }
 }

@@ -36,7 +36,7 @@ class DecorationSpawner {
 
         let randomX = CGFloat.random(in: 50...(scene.size.width - 50))
         decoration.position = CGPoint(x: randomX, y: y + CGFloat.random(in: -50...50))
-        decoration.zPosition = -51
+        decoration.zPosition = 1.5
 
         scene.addChild(decoration)
     }
