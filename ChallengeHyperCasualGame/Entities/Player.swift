@@ -89,7 +89,7 @@ class Player: SKNode {
         // Configure
         combinedBody.linearDamping = 1.0
         combinedBody.friction = 1.0
-        combinedBody.restitution = 0.0
+        combinedBody.restitution = 0.3
         combinedBody.allowsRotation = true
 
         combinedBody.categoryBitMask = PhysicsCategory.player.rawValue
@@ -130,7 +130,7 @@ class Player: SKNode {
             let dx = endPos.x - startPos.x
             let dy = endPos.y - startPos.y
             
-            let velocityX = -dx * 4
+            let velocityX = -dx * 4.5
             let velocityY = min(-dy * 8, 1400)
 
             body.velocity = CGVector(dx: velocityX, dy: velocityY)

@@ -12,14 +12,26 @@ enum TrajectoryHelper {
         clear(in: scene)
 
         var position = scene.player.position
-        var velocity = CGVector(dx: (startPos.x - currentPos.x), dy: (startPos.y - currentPos.y) * 0.9)
+
+        // Simulated initial velocity (based on drag)
+        var velocity = CGVector(
+            dx: (startPos.x - currentPos.x),
+            dy: min((startPos.y - currentPos.y), 200)
+        )
+
         let gravity = scene.physicsWorld.gravity
         let timeStep: CGFloat = 0.1
-        let damping: CGFloat = 0.9
+        let restitution: CGFloat = 0.3
 
+        var collide: Bool = false
         for i in 0..<scene.maxTrajectoryPoints {
             let dot = SKShapeNode(circleOfRadius: 4)
-            dot.fillColor = SKColor(red: 1.0, green: 0.8, blue: 0.2, alpha: 1.0 - CGFloat(i)/CGFloat(scene.maxTrajectoryPoints))
+            dot.fillColor = SKColor(
+                red: 1.0,
+                green: 0.8,
+                blue: 0.2,
+                alpha: 1.0 - CGFloat(i) / CGFloat(scene.maxTrajectoryPoints)
+            )
             dot.strokeColor = .clear
             dot.zPosition = 5
             dot.position = position
@@ -32,18 +44,32 @@ enum TrajectoryHelper {
             scene.addChild(dot)
             scene.trajectoryNodes.append(dot)
 
-            velocity.dx += gravity.dx * timeStep
+            // Apply gravity
             velocity.dy += gravity.dy * timeStep
-            position.x += velocity.dx * timeStep
-            position.y += velocity.dy * timeStep
 
-            if position.x <= scene.frame.minX || position.x >= scene.frame.maxX {
-                velocity.dx = velocity.dx * damping
+            // Predict next position
+            var nextPosition = CGPoint(
+                x: position.x + velocity.dx * timeStep,
+                y: position.y + velocity.dy * timeStep
+            )
+
+            // --- Collision with left/right edges ---
+            if nextPosition.x <= scene.frame.minX && !collide{
+                nextPosition.x = scene.frame.minX
+                velocity.dx *= -restitution
+                velocity.dy *= restitution
+                collide = true
+            } else if nextPosition.x >= scene.frame.maxX && !collide{
+                nextPosition.x = scene.frame.maxX
+                velocity.dx *= -restitution
+                velocity.dy *= restitution
+                collide = true
             }
 
-            if position.y < scene.frame.minY { break }
+            position = nextPosition
         }
     }
+
 
     static func clear(in scene: GameScene) {
         scene.trajectoryNodes.forEach { $0.removeFromParent() }
