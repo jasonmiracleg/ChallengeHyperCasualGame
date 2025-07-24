@@ -10,12 +10,11 @@ import SpriteKit
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
     // player
-    var player: Player!
+    var player: PlayerRevised!
 
     // platforms
     var platforms: [SKSpriteNode] = []
     let platformCategory = PhysicsCategory.platform.rawValue
-    let wallCategory: UInt32 = 0x1 << 2
     var lastPlatformX: CGFloat = 0
 
     // launch
@@ -31,12 +30,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // misc
     var restartButton: SKLabelNode!
     var startJumpPosition: CGPoint?
-    var score: UInt32 = 0
-    var scoreLabel: SKLabelNode!
     
     //background and asset
     var backgroundManager: BackgroundManager!
     var decorationSpawner: DecorationSpawner!
+    
+    //scoring
+    var lastPlatform: SKSpriteNode!
+    var score: Int = 0
+    var scoreLabel: SKLabelNode!
+    var highscoreLabel: SKLabelNode!
+    let highscore = UserDefaults.standard.integer(forKey: "highscore")
+    
+    // debug
+    var detectedContact: Int = 0
     
     override init(size: CGSize) {
         super.init(size: size)
@@ -53,7 +60,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         decorationSpawner = DecorationSpawner(in: self)
         
         camera = Camera.createCamera(for: self)
-        player = Player(in: self)
+        player = PlayerRevised(in: self)
         platforms = Platform.createInitialPlatforms(in: self)
         if let firstPlatform = platforms.first {
             EnvironmentFactory.addInitialEnvironment(below: firstPlatform, in: self)
@@ -62,25 +69,181 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         restartButton = RestartButton.create(in: self)
         Wall.createWalls(in: self)
         createScoreLabel()
+        createHighscoreLabel()
     }
 
+//    func didBegin(_ contact: SKPhysicsContact) {
+//        guard let nodeA = contact.bodyA.node,
+//              let nodeB = contact.bodyB.node else { return }
+//
+//        let categoryA = PhysicsCategory(rawValue: contact.bodyA.categoryBitMask)
+//        let categoryB = PhysicsCategory(rawValue: contact.bodyB.categoryBitMask)
+//
+//        // Handle Player <-> Platform
+//        if categoryA.contains(.player) && categoryB.contains(.platform),
+//           let platform = nodeB as? SKSpriteNode {
+//            handlePlatformContact(playerNode: nodeA, platform: platform, contact: contact)
+//        } else if categoryB.contains(.player) && categoryA.contains(.platform),
+//                  let platform = nodeA as? SKSpriteNode {
+//            handlePlatformContact(playerNode: nodeB, platform: platform, contact: contact)
+//        }
+//    }
+//
+//    private func handlePlatformContact(playerNode: SKNode, platform: SKSpriteNode, contact: SKPhysicsContact) {
+//        // Convert the contact point to the platform's local space
+//        let contactInPlatform = platform.convert(contact.contactPoint, from: scene!)
+//        let topThreshold: CGFloat = 10.0
+//
+//        if contactInPlatform.y >= platform.frame.size.height / 2 - topThreshold {
+//            print("Player landed on top of platform")
+//            player.dampenLandingVelocity()
+//
+//            // Main score (for landing at all)
+//            if platform.userData?["hasBeenLandedOn"] as? Bool != true {
+//                updateScore()
+//                platform.userData?["hasBeenLandedOn"] = true
+//            }
+//
+//            // Bonus: only give if bottleCap or bottomSensor made contact
+//            let contactNodes = [contact.bodyA.node, contact.bodyB.node].compactMap { $0 }
+//
+//            if contactNodes.contains(where: { $0.name == "bottomSensor" })
+////                ,platform.userData?["hasBeenLandedOn"] as? Bool != true
+//            {
+//                print("BOTTOM: TOUCHED")
+//                updateScore(by: 2)
+//                platform.userData?["hasBeenLandedOn"] = true
+//                print("Bonus +1 for bottom sensor (on valid landing)")
+//            } else {
+//                print("BOTTOM: UNTOUCHED")
+//            }
+//
+//            if contactNodes.contains(where: { $0.name == "bottleCap" })
+////                ,platform.userData?["hasBeenLandedOn"] as? Bool != true
+//            {
+//                print("TOP: TOUCHED")
+//                updateScore(by: 3)
+//                platform.userData?["hasBeenLandedOn"] = true
+//                print("Bonus +2 for bottle cap (on valid landing)")
+//            } else {
+//                print("TOP: UNTOUCHED")
+//            }
+//
+//            // Platform behavior triggers
+//            if let type = platform.userData?["type"] as? PlatformType {
+//                switch type {
+//                case .collapsed:
+//                    if platform.userData?["collapseStarted"] == nil {
+//                        platform.userData?["collapseStarted"] = true
+//                        Platform.collapse(platform)
+//                    }
+//                case .moving:
+//                    platform.userData?["isStopped"] = true
+//                default:
+//                    break
+//                }
+//            }
+//        }
+//
+//    }
+    
+    /// Utility to sort physics bodies based on bit mask
+    private func sortBodies(_ bodyA: SKPhysicsBody, _ bodyB: SKPhysicsBody) -> (SKPhysicsBody, SKPhysicsBody) {
+        return bodyA.categoryBitMask < bodyB.categoryBitMask ? (bodyA, bodyB) : (bodyB, bodyA)
+    }
+    
     func didBegin(_ contact: SKPhysicsContact) {
         guard let nodeA = contact.bodyA.node,
               let nodeB = contact.bodyB.node else { return }
 
-        let categoryA = PhysicsCategory(rawValue: contact.bodyA.categoryBitMask)
-        let categoryB = PhysicsCategory(rawValue: contact.bodyB.categoryBitMask)
+        let bodyA = contact.bodyA
+        let bodyB = contact.bodyB
+        
+        // Optional: Sort them for easier comparison
+        let (first, second) = sortBodies(bodyA, bodyB)
+        
+        print("=== Contact Detected \(detectedContact) ===")
+        print("Body A: \(String(describing: nodeA.name))")
+        print(" - Category: \(bodyA.categoryBitMask)")
+        print("Body B: \(String(describing: nodeB.name))")
+        print(" - Category: \(bodyB.categoryBitMask)")
 
-        // Handle Player <-> Platform
-        if categoryA.contains(.player) && categoryB.contains(.platform),
-           let platform = nodeB as? SKSpriteNode {
-            handlePlatformContact(playerNode: nodeA, platform: platform, contact: contact)
-        } else if categoryB.contains(.player) && categoryA.contains(.platform),
-                  let platform = nodeA as? SKSpriteNode {
-            handlePlatformContact(playerNode: nodeB, platform: platform, contact: contact)
-        }
+//        let playerNode: SKNode = {
+//            if categoryA.contains(.player) || categoryA.contains(.topSensor) || categoryA.contains(.bottomSensor) {
+//                return nodeA
+//            } else {
+//                return nodeB
+//            }
+//        }()
+//        let platformNode = categoryA.contains(.platform) ? nodeA : nodeB
+//
+//        guard let platform = platformNode as? SKSpriteNode else { return }
+//
+//        // Determine which part hit the platform
+//        if playerNode.name == "bottomSensor" {
+//            print("If else bottom sensor")
+//            handleLanding(playerNode: playerNode, platform: platform, contact: contact, landingType: .bottomSensor)
+//        } else if playerNode.name == "bottleCap" {
+//            print("If else top sensor")
+//            handleLanding(playerNode: playerNode, platform: platform, contact: contact, landingType: .bottleCap)
+//        } else {
+//            print("If else normal sensor")
+//            // Fallback: assume generic body
+//            // Optional: add threshold check for top of platform
+//            let contactInPlatform = platform.convert(contact.contactPoint, from: scene!)
+//            let topThreshold: CGFloat = 10.0
+//            if contactInPlatform.y >= platform.size.height / 2 - topThreshold {
+//                handleLanding(playerNode: playerNode, platform: platform, contact: contact, landingType: .normal)
+//            }
+//        }
+        
+        detectedContact += 1
     }
 
+    
+    private func handleLanding(playerNode: SKNode, platform: SKSpriteNode, contact: SKPhysicsContact, landingType: LandingType) {
+        print("\(landingType.rawValue): TOUCHED")
+
+        let userData = platform.userData ?? NSMutableDictionary()
+        platform.userData = userData
+
+        if userData["hasBeenLandedOn"] as? Bool != true {
+            // Base score for any valid landing
+            updateScore()
+
+            // Bonus based on type
+            switch landingType {
+            case .bottomSensor:
+                updateScore(by: 2)
+            case .bottleCap:
+                updateScore(by: 3)
+            default:
+                break
+            }
+
+            print("Bonus +\(landingType == .bottomSensor ? 2 : landingType == .bottleCap ? 3 : 0) for \(landingType.rawValue.lowercased()) landing")
+            userData["hasBeenLandedOn"] = true
+        }
+
+        // Trigger platform behavior (once per landing)
+        if let type = userData["type"] as? PlatformType {
+            switch type {
+            case .collapsed:
+                if userData["collapseStarted"] == nil {
+                    userData["collapseStarted"] = true
+                    Platform.collapse(platform)
+                }
+            case .moving:
+                userData["isStopped"] = true
+            default:
+                break
+            }
+        }
+
+        player.dampenLandingVelocity()
+    }
+
+    
     func didEnd(_ contact: SKPhysicsContact) {
         let bodyA = contact.bodyA.node
         let bodyB = contact.bodyB.node
@@ -93,42 +256,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             platform.userData?["isStopped"] = false
         }
     }
-
-    private func handlePlatformContact(playerNode: SKNode, platform: SKSpriteNode, contact: SKPhysicsContact) {
-        // Convert the contact point to the platform's local space
-        let contactInPlatform = platform.convert(contact.contactPoint, from: scene!)
-
-        let topThreshold: CGFloat = 10.0
-
-        // Check if player landed on top of the platform
-        if contactInPlatform.y >= platform.frame.size.height / 2 - topThreshold {
-            print("Player landed on top of platform")
-
-            platform.userData?["hasBeenLandedOn"] = true
-            
-            print("Type of platform: \(platform.userData?["type"])")
-            
-            if let type = platform.userData?["type"] as? PlatformType {
-                print("Type of platform: \(type)")
-                switch type {
-                case .collapsed:
-                    if platform.userData?["collapseStarted"] == nil {
-                        platform.userData?["collapseStarted"] = true
-                        Platform.collapse(platform)
-                    }
-                case .moving:
-                    print("Stopped moving platform")
-                    platform.userData?["isStopped"] = true
-                default:
-                    break
-                }
-            }
-        } else {
-            print("Player hit side or bottom of platform – no special logic triggered")
-        }
-    }
-
-
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
@@ -181,6 +308,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         // Restart button check
         if nodes(at: location).contains(where: { $0.name == "restartButton" }) {
+            updateHighscore()
             SceneRestarter.restart(scene: self)
             return
         }
@@ -238,6 +366,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         )
         
         camera?.addChild(scoreLabel)
+    }
+    
+    func createHighscoreLabel() {
+        highscoreLabel = SKLabelNode(text: "\(highscore)")
+        highscoreLabel.fontName = "AvenirNext-Bold"
+        highscoreLabel.fontSize = 45
+        highscoreLabel.fontColor = .white
+        highscoreLabel.position = CGPoint(
+            x: frame.midX * 0.1,
+            y: camera!.position.y - 100
+        )
+        
+        camera?.addChild(highscoreLabel)
+    }
+    
+    func updateScore(by points: Int = 1) {
+        score += points
+        scoreLabel.text = "\(score)"
+    }
+    
+    func updateHighscore(){
+        if score > highscore {
+            UserDefaults.standard.set(score, forKey: "highscore")
+        }
     }
     
     func isPlayerOnPlatform() -> Bool {

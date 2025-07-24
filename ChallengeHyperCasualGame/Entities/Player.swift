@@ -43,8 +43,7 @@ class Player: SKNode {
         
         self.addChild(bottleBody)
         self.addChild(bottleCap)
-        self.addChild(bottomSensor)
-        self.addChild(topSensor)
+        
         
         scene.addChild(self)
     }
@@ -102,8 +101,13 @@ class Player: SKNode {
 
     
     private func setupSensors(size: CGSize) {
-        bottomSensor.position = CGPoint(x: 0, y: -size.height / 2)
-        let bottomPhysics = SKPhysicsBody(rectangleOf: CGSize(width: size.width * 0.8, height: 2))
+        let capHeight: CGFloat = 5
+        let sensorWidth = size.width * 0.8
+        let sensorHeight: CGFloat = 2.0
+
+        // Position bottom sensor just below the bottle base
+        bottomSensor.position = CGPoint(x: 0, y: -size.height / 2 - sensorHeight - 2) // 2pt extra margin
+        let bottomPhysics = SKPhysicsBody(rectangleOf: CGSize(width: sensorWidth, height: sensorHeight))
         bottomPhysics.isDynamic = false
         bottomPhysics.affectedByGravity = false
         bottomPhysics.categoryBitMask = PhysicsCategory.bottomSensor.rawValue
@@ -111,9 +115,20 @@ class Player: SKNode {
         bottomPhysics.collisionBitMask = 0
         bottomPhysics.usesPreciseCollisionDetection = true
         bottomSensor.physicsBody = bottomPhysics
+        bottomSensor.name = "bottomSensor" // Name for debug/contact checking
         
-        topSensor.position = CGPoint(x: 0, y: size.height / 2)
-        let topPhysics = SKPhysicsBody(rectangleOf: CGSize(width: size.width * 0.8, height: 2))
+        // Debug shape for bottom sensor
+//        #if DEBUG
+        let bottomDebug = SKShapeNode(rectOf: CGSize(width: sensorWidth, height: sensorHeight))
+        bottomDebug.fillColor = .red
+        bottomDebug.strokeColor = .clear
+        bottomDebug.zPosition = 1000
+        bottomSensor.addChild(bottomDebug)
+//        #endif
+
+        // Position top sensor just above the cap
+        topSensor.position = CGPoint(x: 0, y: size.height / 2 + capHeight + sensorHeight + 2)
+        let topPhysics = SKPhysicsBody(rectangleOf: CGSize(width: sensorWidth, height: sensorHeight))
         topPhysics.isDynamic = false
         topPhysics.affectedByGravity = false
         topPhysics.categoryBitMask = PhysicsCategory.topSensor.rawValue
@@ -121,7 +136,18 @@ class Player: SKNode {
         topPhysics.collisionBitMask = 0
         topPhysics.usesPreciseCollisionDetection = true
         topSensor.physicsBody = topPhysics
+        topSensor.name = "topSensor" // Name for debug/contact checking
+        
+        // Debug shape for top sensor
+//        #if DEBUG
+        let topDebug = SKShapeNode(rectOf: CGSize(width: sensorWidth, height: sensorHeight))
+        topDebug.fillColor = .blue
+        topDebug.strokeColor = .clear
+        topDebug.zPosition = 1000
+        topSensor.addChild(topDebug)
+//        #endif
     }
+
 
     func handleJump(from startPos: CGPoint, to endPos: CGPoint) {
         guard let body = self.physicsBody else { return }
@@ -156,6 +182,18 @@ class Player: SKNode {
             
             body.angularVelocity = spinBoost
         }
+    }
+    
+    func dampenLandingVelocity() {
+        guard let body = self.physicsBody else { return }
+
+        // Reduce vertical velocity to minimize bounce
+        let reducedVelocity = CGVector(
+            dx: body.velocity.dx * 0.1,  // Optional: Slightly reduce horizontal speed
+            dy: body.velocity.dy * 0.1   // Reduce bounce by dampening Y velocity
+        )
+
+        body.velocity = reducedVelocity
     }
     
     func isIdle() -> Bool {
