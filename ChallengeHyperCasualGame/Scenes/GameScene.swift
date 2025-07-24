@@ -52,6 +52,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func didMove(to view: SKView) {
         setupGame()
         showStartOverlay()
+        showTutorial()
     }
     
     func didBegin(_ contact: SKPhysicsContact) {
@@ -269,7 +270,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         SoundManager.playBackgroundMusic(fileName: "bgm.mp3")
         SoundManager.preloadEffect(fileName: "launch.mp3", volume: 0.8)
-        SoundManager.preloadEffect(fileName: "land.mp3", volume: 0.5)
+        SoundManager.preloadEffect(fileName: "land.mp3", volume: 0.3)
         restartButton = RestartButton.create(in: self)
         Wall.createWalls(in: self)
         createScoreLabel()
@@ -280,10 +281,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         let background = SKSpriteNode(
             color: UIColor.black.withAlphaComponent(0.2),
-            size: self.size
+            size: CGSize(width: size.width, height: size.height + 100)  // buffer at bottom
         )
         
-        background.position = CGPoint(x: frame.midX, y: frame.midY)
+        background.position = CGPoint(x: frame.midX, y: frame.midY - 50) // center shift
         background.zPosition = 100
         startOverlay?.addChild(background)
 
@@ -344,5 +345,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         overlay.run(SKAction.sequence([fadeOut, remove]))
         startOverlay = nil
+    }
+    
+    private func showTutorial() {
+        let swipeLabel = SKLabelNode(text: "← Swipe →")
+        swipeLabel.fontName = "Arial-BoldMT"
+        swipeLabel.fontSize = 18
+        swipeLabel.fontColor = .white
+        swipeLabel.position = CGPoint(x: frame.midX + 100, y: frame.maxY + 50)
+        swipeLabel.zPosition = 101
+        addChild(swipeLabel)
     }
 }
