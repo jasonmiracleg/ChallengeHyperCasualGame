@@ -63,7 +63,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 in: self
             )
         }
-
+        
+        SoundManager.playBackgroundMusic(fileName: "bgm.mp3")
+        SoundManager.preloadEffect(fileName: "launch.mp3", volume: 0.8)
+        SoundManager.preloadEffect(fileName: "land.mp3", volume: 0.5)
+        
         restartButton = RestartButton.create(in: self)
         Wall.createWalls(in: self)
         createScoreLabel()
@@ -84,7 +88,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                   let platform = nodeA as? SKSpriteNode {
             handlePlatformContact(playerNode: nodeB, platform: platform, contact: contact)
         }
-        
+
     }
     
     func didEnd(_ contact: SKPhysicsContact) {
@@ -106,6 +110,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         // Check if player landed on top of the platform
         if contactInPlatform.y >= platform.frame.size.height / 2 - topThreshold {
+            
             print("Player landed on top of platform")
 
             platform.userData?["hasBeenLandedOn"] = true
@@ -128,6 +133,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     applyParticles(particle: dustParticle, object: playerNode)
                 }
             }
+            
+            SoundManager.playEffect(fileName: "land.mp3")
         } else {
             print("Player hit side or bottom of platform – no special logic triggered")
         }
@@ -162,29 +169,26 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first, let start = dragStartPos else { return }
         let location = touch.location(in: self)
-
+        
         // Restart button check
         if nodes(at: location).contains(where: { $0.name == "restartButton" }) {
             SceneRestarter.restart(scene: self)
             return
         }
-
-        let currentTime = CACurrentMediaTime()
-        let timeSinceLastTap = currentTime - lastTapTime
-        lastTapTime = currentTime
-
-        if timeSinceLastTap < 0.3 {
-            player.flyBoost()
-            TrajectoryHelper.clear(in: self)
-            dragStartPos = nil
-            jumpDirection = 0
-            return
+        
+        if player.isIdle() {
+            player.handleJump(from: start, to: location)
+            SoundManager.playEffect(fileName: "launch.mp3")
+        } else {
+            player.handleSpin(from: start, to: location)
         }
-
+        
+        // Single-tap drag jump
         player.handleJump(from: start, to: location)
         TrajectoryHelper.clear(in: self)
         jumpDirection = 0
         dragStartPos = nil
+        dragCurrentPos = nil
     }
 
     override func update(_ currentTime: TimeInterval) {
