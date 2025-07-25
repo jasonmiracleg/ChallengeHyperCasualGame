@@ -89,6 +89,7 @@ enum Platform {
             platform.userData = NSMutableDictionary()
         }
         platform.userData?["type"] = type
+        platform.userData?["hasBeenLanded"] = false
         
         switch type {
         case .normal:
@@ -186,6 +187,8 @@ enum Platform {
             
             if i == 0 {
                 platform.userData?["hasBeenLandedOn"] = true
+            } else {
+                platform.userData?["hasBeenLandedOn"] = false
             }
             
             // --- Wall spawning ---

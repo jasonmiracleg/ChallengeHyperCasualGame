@@ -14,12 +14,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     // platforms
     var platforms: [SKSpriteNode] = []
-    let platformCategory = PhysicsCategory.platform.rawValue
     
-    var lastPlatformX: CGFloat = 0
+    var lastPlatformX: CGFloat = 0 // <-- EXPLAIN WHAT THIS IS FOR
     
     // launch
-    var jumpDirection: CGFloat = 0
+    var jumpDirection: CGFloat = 0 // <-- does jump direction not mean left or right?
     var lastTapTime: TimeInterval = 0
     var dragStartPos: CGPoint?
     var dragCurrentPos: CGPoint?
@@ -37,17 +36,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var backgroundManager: BackgroundManager!
     var decorationSpawner: DecorationSpawner!
     
-    var lastWallContactTime: CFTimeInterval = 0.0
+    var lastWallContactTime: CFTimeInterval = 0.0 // <-- This is part of background and asset variable??
 
-    //scoring
+//    scoring
+    var score: Int = 0
+    var scoreMultiplier: Int = 1 // <-- only here in case we wanna do combo shit
+    let highscore = UserDefaults.standard.integer(forKey: "highscore")
+    
+    //platform relevant
     var lastPlatform: SKSpriteNode!
     var candidateLandingPlatform: SKSpriteNode!
-    var score: Int = 0
+    
+    //labeling
     var scoreLabel: SKLabelNode!
     var highscoreLabel: SKLabelNode!
     var dynamicScoreLabel: SKLabelNode!
-    let highscore = UserDefaults.standard.integer(forKey: "highscore")
-    var scoreMultiplier = 1
+    
+    //booleans
     var checkMultiplier: Bool = false
     var keepScoreMultiplier: Bool = true
     
@@ -68,6 +73,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         showTutorial()
         createScoreLabel()
         createDynamicScoreLabel()
+        
+        print("BUILD SUCCESSFULL\n\n\n\n\n")
     }
     
     func didBegin(_ contact: SKPhysicsContact) {
@@ -76,7 +83,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         let categoryA = PhysicsCategory(rawValue: contact.bodyA.categoryBitMask)
         let categoryB = PhysicsCategory(rawValue: contact.bodyB.categoryBitMask)
-        
+
         // Handle Player <-> Platform
         if categoryA.contains(.player) && categoryB.contains(.platform),
            let platform = nodeB as? SKSpriteNode {
@@ -108,6 +115,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let bodyA = contact.bodyA.node
         let bodyB = contact.bodyB.node
         
+        // handling moving platforms
         if let platform = bodyA as? SKSpriteNode, platform.name == "moving" {
             platform.userData?["isStopped"] = false
         } else if let platform = bodyB as? SKSpriteNode, platform.name == "moving" {
@@ -116,71 +124,45 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     private func handlePlatformContact(playerNode: SKNode, platform: SKSpriteNode, contact: SKPhysicsContact) {
-        let contactNormal = contact.contactNormal
-        let isTopContactByNormal = contactNormal.dy < -0.5
-        
-        let contactPoint = contact.contactPoint
-        let platformTop = platform.position.y + (platform.frame.height / 2)
-        let isTopContactByPosition = contactPoint.y >= (platformTop - 20.0)
-        
-        if isTopContactByNormal || isTopContactByPosition {
-            // Convert the contact point to the platform's local space
-            let contactInPlatform = platform.convert(contact.contactPoint, from: scene!)
-            
-            let topThreshold: CGFloat = 10.0
-            
-            // Check if player landed on top of the platform
-            if contactInPlatform.y >= platform.frame.size.height / 2 - topThreshold {
-                
-                print("Player landed on top of platform")
-                
-                platform.userData?["hasBeenLandedOn"] = true
-                
-                if let type = platform.userData?["type"] as? PlatformType {
-                    switch type {
-                    case .collapsed:
-                        if platform.userData?["collapseStarted"] == nil {
-                            platform.userData?["collapseStarted"] = true
-                            Platform.collapse(platform)
-                        } else {
-                        }
-                    case .moving:
-                        platform.userData?["isStopped"] = true
-                    default:
-                        let dustParticle = Particles.createDustEmitter()
-                        applyParticles(particle: dustParticle, object: playerNode)
-                    }
-                }
-            }
-        }
+
         let contactInPlatform = platform.convert(contact.contactPoint, from: scene!)
         let topThreshold: CGFloat = 10.0
-
-        if contactInPlatform.y >= platform.frame.size.height / 2 - topThreshold {
+        
+        print("Contact in Platform: \(contactInPlatform.y) <-- NEEDS TO BE HIGHER\nOther thing: \(platform.frame.size.height / 2 - topThreshold)")
+        
+        // Check if player landed on top of the platform
+        if contact.contactNormal.dy < -0.5{
+            
+            // adds stickiness to platforms
             player.dampenLandingVelocity()
+            
+            // get platform to check for points
             candidateLandingPlatform = platform
+            
+            // fix variable name <-- used for chekcing if it should be scored or not
             checkMultiplier = true
-
-            // Platform behavior triggers
+            
+            // debug purposes
+            print("\(playerNode.name ?? "Player") made contact with \(platform.name ?? "Platform")")
+            
+            // explain?
             if let type = platform.userData?["type"] as? PlatformType {
                 switch type {
                 case .collapsed:
                     if platform.userData?["collapseStarted"] == nil {
                         platform.userData?["collapseStarted"] = true
                         Platform.collapse(platform)
+                    } else {
                     }
                 case .moving:
                     platform.userData?["isStopped"] = true
                 default:
-                    break
+                    let dustParticle = Particles.createDustEmitter()
+                    applyParticles(particle: dustParticle, object: playerNode)
                 }
-                
-                SoundManager.playEffect(fileName: "land.mp3")
-            } else {
-                print("Player hit side or bottom of platform – no special logic triggered")
             }
         }
-
+        
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -269,44 +251,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
         
-//        scoring purposes
-        if abs(velocity.dy) == 0.0 && abs (velocity.dx) == 0.0 && checkMultiplier {
-            checkMultiplier = false
-            
-            if let candidate = candidateLandingPlatform{
-                if candidate.userData?["hasBeenLandedOn"] as? Bool != true{
-                    candidate.userData?["hasBeenLandedOn"] = true
-                    
-                    switch player.checkRotation(){
-                    case .bottleCap:
-                        updateScore(by: scoreMultiplier * 3)
-                        print("Player landed A CAP FLIP")
-                        break
-                    case .standing:
-                        updateScore(by: scoreMultiplier * 2)
-                        print("Player landed A FLIP")
-                        break
-                    default:
-                        updateScore(by: scoreMultiplier)
-                        print("Player landed")
-                        break
-                    }
-                    
-                    keepScoreMultiplier = true
-                    lastPlatform = candidate
-                } else {
-                    if !keepScoreMultiplier {
-                        scoreMultiplier = 1
-                    }
-                    keepScoreMultiplier = true
-                }
-            }
-            
-            candidateLandingPlatform = nil
-        }
-        
-        updateDynamicScoreLabel(points: scoreMultiplier)
-//        ==> until here
+        handleScoring()
 
         Platform.updateMovingPlatforms(in: self)
         backgroundManager.update(playerY: player.position.y)
@@ -316,7 +261,87 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             print("Game Over")
         }
     }
+    
+    func isPlayerOnPlatform() -> Bool {
+        let verticalTolerance: CGFloat = 2.0
 
+        for platform in platforms {
+            let playerBottomY = player.frame.minY
+            let platformTopY = platform.frame.maxY
+
+            let isHorizontallyAligned =
+                player.frame.maxX > platform.frame.minX
+                && player.frame.minX < platform.frame.maxX
+
+            let isVerticallyOnTop =
+                abs(playerBottomY - platformTopY) <= verticalTolerance
+
+            if isHorizontallyAligned && isVerticallyOnTop {
+                return true
+            }
+        }
+        return false
+    }
+    
+    private func applyParticles(particle: SKEmitterNode, object: SKNode) {
+        particle.position = CGPoint(x: object.position.x, y: object.position.y)
+        addChild(particle)
+        
+        particle.run(SKAction.sequence([
+            SKAction.wait(forDuration: 1.0),
+            SKAction.removeFromParent()
+        ]))
+    }
+    
+//    === scoring relevant functions
+    func handleScoring(){
+        let velocity = player.physicsBody?.velocity ?? .zero
+        
+        if abs(velocity.dy) == 0.0 && abs (velocity.dx) == 0.0 && checkMultiplier {
+            
+            print("passed first if, setting check to false")
+            checkMultiplier = false
+                    
+            if let candidate = candidateLandingPlatform{
+                print("got Candidate Landing Platform")
+                if candidate.userData?["hasBeenLandedOn"] as? Bool != true{
+                    print("Has not been landed on, set to tru")
+                    candidate.userData?["hasBeenLandedOn"] = true
+                            
+                    switch player.checkRotation(){
+                        case .bottleCap:
+                            updateScore(by: scoreMultiplier * 3)
+                            print("Player landed A CAP FLIP")
+                            break
+                        case .standing:
+                            updateScore(by: scoreMultiplier * 2)
+                            print("Player landed A FLIP")
+                            break
+                        default:
+                            updateScore(by: scoreMultiplier)
+                            print("Player landed")
+                            break
+                        }
+                        
+                        keepScoreMultiplier = true
+                        lastPlatform = candidate
+                    } else {
+                        print("Has been landed on, no points")
+                        if !keepScoreMultiplier {
+                            scoreMultiplier = 1
+                        }
+                        keepScoreMultiplier = true
+                    }
+                }
+                
+                candidateLandingPlatform = nil
+            print("score: \(score)")
+            }
+            
+            updateDynamicScoreLabel(points: scoreMultiplier)
+    }
+    
+    //labels
     func createScoreLabel() {
         scoreLabel = SKLabelNode(text: "\(score)")
         scoreLabel.fontName = "AvenirNext-Bold"
@@ -356,6 +381,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         camera?.addChild(dynamicScoreLabel)
     }
     
+    //updating
     func updateDynamicScoreLabel(points: Int){
         dynamicScoreLabel.text = "+\(points)"
         dynamicScoreLabel.position = CGPoint(
@@ -375,52 +401,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             UserDefaults.standard.set(score, forKey: "highscore")
         }
     }
-    
-    func isPlayerOnPlatform() -> Bool {
-        let verticalTolerance: CGFloat = 2.0
-
-        for platform in platforms {
-            let playerBottomY = player.frame.minY
-            let platformTopY = platform.frame.maxY
-
-            let isHorizontallyAligned =
-                player.frame.maxX > platform.frame.minX
-                && player.frame.minX < platform.frame.maxX
-
-            let isVerticallyOnTop =
-                abs(playerBottomY - platformTopY) <= verticalTolerance
-
-            if isHorizontallyAligned && isVerticallyOnTop {
-                return true
-            }
-        }
-        return false
-    }
-    
-    func isPlayer(on platform: SKSpriteNode) -> Bool {
-        let verticalTolerance: CGFloat = 2.0
-        let playerBottomY = player.frame.minY
-        let platformTopY = platform.frame.maxY
-        
-        let isHorizontallyAligned =
-        player.frame.maxX > platform.frame.minX &&
-        player.frame.minX < platform.frame.maxX
-        
-        let isVerticallyOnTop =
-        abs(playerBottomY - platformTopY) <= verticalTolerance
-        
-        return isHorizontallyAligned && isVerticallyOnTop
-    }
-    
-    private func applyParticles(particle: SKEmitterNode, object: SKNode) {
-        particle.position = CGPoint(x: object.position.x, y: object.position.y)
-        addChild(particle)
-        
-        particle.run(SKAction.sequence([
-            SKAction.wait(forDuration: 1.0),
-            SKAction.removeFromParent()
-        ]))
-    }
+//    scoring relevant functions ===
     
     private func setupGame() {
         physicsWorld.contactDelegate = self
@@ -461,14 +442,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         nameLabel.zPosition = 101
         startOverlay?.addChild(nameLabel)
         
-        let scoreLabel = SKLabelNode(text: "000")
-        scoreLabel.fontName = "Arial-BoldMT"
-        scoreLabel.fontSize = 42
-        scoreLabel.setScale(1.5)
-        scoreLabel.fontColor = .white
-        scoreLabel.position = CGPoint(x: frame.midX, y: frame.midY + 25)
-        scoreLabel.zPosition = 101
-        startOverlay?.addChild(scoreLabel)
+        let zscoreLabel = SKLabelNode(text: "000")
+        zscoreLabel.fontName = "Arial-BoldMT"
+        zscoreLabel.fontSize = 42
+        zscoreLabel.setScale(1.5)
+        zscoreLabel.fontColor = .white
+        zscoreLabel.position = CGPoint(x: frame.midX, y: frame.midY + 25)
+        zscoreLabel.zPosition = 101
+        startOverlay?.addChild(zscoreLabel)
         
         let bestScoreLabel = SKLabelNode(text: "Best Score")
         bestScoreLabel.fontName = "Arial-BoldMT"

@@ -11,47 +11,63 @@ class Player: SKNode {
     let bottleBody: SKSpriteNode
     let bottleCap: SKSpriteNode
     
+    let bodySize: CGSize = CGSize(width: 20, height: 40)
+    let capSize: CGSize = CGSize(width: 10, height: 5)
+    private var capOffsetY: CGFloat {
+        return bodySize.height/2 + capSize.height/2
+    }
+    
     init(in scene: SKScene) {
-        let bodySize = CGSize(width: 20, height: 40)
-        let capSize = CGSize(width: 10, height: 5)
-        
-        let offsetY = bodySize.height/2 + capSize.height/2
-        
+        // applying asset texture
         bottleBody = SKSpriteNode(imageNamed: "bottle_body")
         bottleCap = SKSpriteNode(imageNamed: "bottle_cap")
         
         super.init()
         self.position = CGPoint(x: scene.frame.midX, y: 100)
-        bottleBody.zPosition = 10
-        bottleBody.position = .zero
-        bottleCap.zPosition = 11
-        bottleCap.position = CGPoint(x: 0, y: offsetY)
         
+        setupBottle()
+        
+        // adding into scene
+        scene.addChild(self)
+    }
+    
+    private func setupBottle(){
+        // z position
+        bottleBody.zPosition = 10
+        bottleCap.zPosition = 11
+        
+        // position
+        bottleBody.position = .zero
+        bottleCap.position = CGPoint(x: 0, y: capOffsetY)
+        
+        //scale them to size
         let scaleFactor: CGFloat = 0.15
         bottleBody.setScale(scaleFactor)
         bottleCap.setScale(scaleFactor)
         
-        setupPhysics(size: bodySize)
+        // setting up physics
+        setupPhysics()
 
+        //adding into the Player SKNode Container
         self.addChild(bottleBody)
         self.addChild(bottleCap)
         
-        scene.addChild(self)
     }
     
-    private func setupPhysics(size: CGSize) {
-        let capSize = CGSize(width: 10, height: 5)
-        let capOffsetY: CGFloat = size.height / 2 + capSize.height / 2
-        let bottleBody = SKPhysicsBody(rectangleOf: size)
-        
+    private func setupPhysics() {
+        // creating physics bodies
+        let bottleBody = SKPhysicsBody(rectangleOf: bodySize)
         let capBody = SKPhysicsBody(rectangleOf: capSize, center: CGPoint(x: 0, y: capOffsetY))
+        
         let combinedBody = SKPhysicsBody(bodies: [bottleBody, capBody])
         
+        // physics configuration here
         combinedBody.linearDamping = 1.0
         combinedBody.friction = 1.0
         combinedBody.restitution = 0.3
         combinedBody.allowsRotation = true
         
+        // physics bit mask configuration
         combinedBody.categoryBitMask = PhysicsCategory.player.rawValue
         combinedBody.contactTestBitMask = PhysicsCategory.platform.rawValue | PhysicsCategory.wall.rawValue
         combinedBody.collisionBitMask = PhysicsCategory.platform.rawValue | PhysicsCategory.wall.rawValue
@@ -97,7 +113,8 @@ class Player: SKNode {
     func dampenLandingVelocity() {
         guard let body = self.physicsBody else { return }
 
-        // Reduce vertical velocity to minimize bounce
+        // Reduce vertical and horizontal velocity to minimize bounce
+        // V keep manipulating these for the platform's "stickiness"
         let reducedVelocity = CGVector(
             dx: body.velocity.dx * 0.1,  // Optional: Slightly reduce horizontal speed
             dy: body.velocity.dy * 0.1   // Reduce bounce by dampening Y velocity
@@ -106,6 +123,7 @@ class Player: SKNode {
         body.velocity = reducedVelocity
     }
     
+//    whats this function for
     func isIdle() -> Bool {
         guard let body = self.physicsBody else { return false }
 
@@ -118,6 +136,7 @@ class Player: SKNode {
         }
     }
     
+//    checks what rotation it is for scoring purposes
     func checkRotation() -> LandingType {
         // Convert radians to degrees
         let degrees = abs(zRotation * 180 / .pi).truncatingRemainder(dividingBy: 360)
@@ -143,6 +162,7 @@ class Player: SKNode {
     }
 }
 
+// again for scoring purposes
 enum LandingType: String {
     case normal = "Normal"
     case standing = "Standing"
