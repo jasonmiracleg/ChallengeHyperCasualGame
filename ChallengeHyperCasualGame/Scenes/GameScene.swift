@@ -217,6 +217,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         Platform.updateMovingPlatforms(in: self)
         backgroundManager.update(playerY: player.position.y)
         decorationSpawner.update(playerY: player.position.y)
+        
+        if player.position.y < camera!.position.y - 400 {
+            print("Game Over")
+        }
     }
 
     func createScoreLabel() {
