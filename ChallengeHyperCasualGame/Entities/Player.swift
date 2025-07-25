@@ -8,17 +8,14 @@
 import SpriteKit
 
 class Player: SKNode {
-    
     let bottleBody: SKSpriteNode
     let bottleCap: SKSpriteNode
     let topSensor: SKNode
     let bottomSensor: SKNode
     
     init(in scene: SKScene) {
-        // Dimensions
         let bodySize = CGSize(width: 20, height: 40)
         let capSize = CGSize(width: 10, height: 5)
-        
         
         bottleBody = SKSpriteNode(imageNamed: "bottle_body")
         bottleCap = SKSpriteNode(imageNamed: "bottle_cap")
@@ -27,10 +24,9 @@ class Player: SKNode {
         topSensor = SKNode()
         
         super.init()
-        
         self.position = CGPoint(x: scene.frame.midX, y: 100)
         bottleBody.zPosition = 10
-        bottleCap.zPosition = 10
+        bottleCap.zPosition = 11
         
         let scaleFactor: CGFloat = 0.15
         bottleBody.setScale(scaleFactor)
@@ -54,52 +50,29 @@ class Player: SKNode {
     }
     
     private func setupBottleCap(offsetY: CGFloat, size: CGSize) {
-//            bottleCap.fillColor = .darkGray
-//            bottleCap.strokeColor = .red // Use red outline for visibility
-//            bottleCap.lineWidth = 1
-//            bottleCap.zPosition = 1
-            
-            // Centered path so that the shape aligns correctly with the physics body
-            let rect = CGRect(
-                x: -size.width / 2,
-                y: -size.height / 2,
-                width: size.width,
-                height: size.height
-            )
-//        bottleCap.path = CGPath(rect: rect, transform: nil)
-            
-        // Position cap visually at the same Y offset as its physics body center
-        bottleCap.position = CGPoint(x: 0, y: offsetY)
+        let capOffsetY = size.height / 2 + bottleCap.size.height / 2
+        bottleCap.position = CGPoint(x: 0, y: capOffsetY + 23)
     }
-
     
     private func setupPhysics(size: CGSize) {
         let capSize = CGSize(width: 10, height: 5)
         let capOffsetY: CGFloat = size.height / 2 + capSize.height / 2
-
-        // Main bottle body
         let bottleBody = SKPhysicsBody(rectangleOf: size)
-
-        // Cap body, positioned above the bottle
+        
         let capBody = SKPhysicsBody(rectangleOf: capSize, center: CGPoint(x: 0, y: capOffsetY))
-
-        // Combine into one physics body
         let combinedBody = SKPhysicsBody(bodies: [bottleBody, capBody])
-
-        // Configure
+        
         combinedBody.linearDamping = 1.0
         combinedBody.friction = 1.0
         combinedBody.restitution = 0.3
         combinedBody.allowsRotation = true
-
+        
         combinedBody.categoryBitMask = PhysicsCategory.player.rawValue
         combinedBody.contactTestBitMask = PhysicsCategory.platform.rawValue | PhysicsCategory.wall.rawValue
         combinedBody.collisionBitMask = PhysicsCategory.platform.rawValue | PhysicsCategory.wall.rawValue
-
+        
         self.physicsBody = combinedBody
     }
-
-
     
     private func setupSensors(size: CGSize) {
         bottomSensor.position = CGPoint(x: 0, y: -size.height / 2)
@@ -122,7 +95,7 @@ class Player: SKNode {
         topPhysics.usesPreciseCollisionDetection = true
         topSensor.physicsBody = topPhysics
     }
-
+    
     func handleJump(from startPos: CGPoint, to endPos: CGPoint) {
         guard let body = self.physicsBody else { return }
         
@@ -132,7 +105,7 @@ class Player: SKNode {
             
             let velocityX = -dx * 4.5
             let velocityY = min(-dy * 8, 1400)
-
+            
             body.velocity = CGVector(dx: velocityX, dy: velocityY)
             
             let spin = dx * 0.15
@@ -160,7 +133,7 @@ class Player: SKNode {
     
     func isIdle() -> Bool {
         guard let body = self.physicsBody else { return false}
-
+        
         let velocity = body.velocity
         let speedThreshold: CGFloat = 1
         if abs(velocity.dy) < speedThreshold {
@@ -179,5 +152,4 @@ class Player: SKNode {
         body.velocity = CGVector(dx: 0, dy: 1600)
         body.angularVelocity = CGFloat.random(in: -2.0...2.0)
     }
-
 }

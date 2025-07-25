@@ -11,13 +11,13 @@ import SpriteKit
 class GameScene: SKScene, SKPhysicsContactDelegate {
     // player
     var player: Player!
-
+    
     // platforms
     var platforms: [SKSpriteNode] = []
     let platformCategory = PhysicsCategory.platform.rawValue
     let wallCategory: UInt32 = 0x1 << 2
     var lastPlatformX: CGFloat = 0
-
+    
     // launch
     var jumpDirection: CGFloat = 0
     var lastTapTime: TimeInterval = 0
@@ -76,7 +76,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func didBegin(_ contact: SKPhysicsContact) {
         guard let nodeA = contact.bodyA.node,
               let nodeB = contact.bodyB.node else { return }
-
+        
         let categoryA = PhysicsCategory(rawValue: contact.bodyA.categoryBitMask)
         let categoryB = PhysicsCategory(rawValue: contact.bodyB.categoryBitMask)
         
@@ -101,8 +101,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             platform.userData?["isStopped"] = false
         }
     }
-
+    
     private func handlePlatformContact(playerNode: SKNode, platform: SKSpriteNode, contact: SKPhysicsContact) {
+        let contactNormal = contact.contactNormal
+        let isTopContactByNormal = contactNormal.dy < -0.5
+        
+        let contactPoint = contact.contactPoint
+        let platformTop = platform.position.y + (platform.frame.height / 2)
+        let isTopContactByPosition = contactPoint.y >= (platformTop - 20.0)
+        
+        if isTopContactByNormal || isTopContactByPosition {
         // Convert the contact point to the platform's local space
         let contactInPlatform = platform.convert(contact.contactPoint, from: scene!)
 
@@ -115,18 +123,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
             platform.userData?["hasBeenLandedOn"] = true
             
-            print("Type of platform: \(platform.userData?["type"])")
-            
             if let type = platform.userData?["type"] as? PlatformType {
-                print("Type of platform: \(type)")
                 switch type {
                 case .collapsed:
                     if platform.userData?["collapseStarted"] == nil {
                         platform.userData?["collapseStarted"] = true
                         Platform.collapse(platform)
+                    } else {
                     }
                 case .moving:
-                    print("Stopped moving platform")
                     platform.userData?["isStopped"] = true
                 default:
                     let dustParticle = Particles.createDustEmitter()
@@ -165,7 +170,31 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             TrajectoryHelper.show(from: start, to: current, in: self)
         }
     }
-
+    
+//        override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+//            guard let touch = touches.first, let start = dragStartPos else { return }
+//            let location = touch.location(in: self)
+//    
+//            // Restart button check
+//            if nodes(at: location).contains(where: { $0.name == "restartButton" }) {
+//                SceneRestarter.restart(scene: self)
+//                return
+//            }
+//    
+//            if player.isIdle() {
+//                player.handleJump(from: start, to: location)
+//            } else {
+//                player.handleSpin(from: start, to: location)
+//            }
+//    
+//            // Single-tap drag jump
+//            player.handleJump(from: start, to: location)
+//            TrajectoryHelper.clear(in: self)
+//            jumpDirection = 0
+//            dragStartPos = nil
+//            dragCurrentPos = nil
+//        }
+    
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first, let start = dragStartPos else { return }
         let location = touch.location(in: self)
@@ -199,7 +228,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             in: self,
             lastPlatformX: &lastPlatformX
         )
-
+        
         let velocity = player.physicsBody?.velocity ?? .zero
         if abs(velocity.dy) == 0.0 && isPlayerOnPlatform() {
             guard let startY = startJumpPosition?.y else {
