@@ -179,29 +179,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     
-//        override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-//            guard let touch = touches.first, let start = dragStartPos else { return }
-//            let location = touch.location(in: self)
-//    
-//            // Restart button check
-//            if nodes(at: location).contains(where: { $0.name == "restartButton" }) {
-//                SceneRestarter.restart(scene: self)
-//                return
-//            }
-//    
-//            if player.isIdle() {
-//                player.handleJump(from: start, to: location)
-//            } else {
-//                player.handleSpin(from: start, to: location)
-//            }
-//    
-//            // Single-tap drag jump
-//            player.handleJump(from: start, to: location)
-//            TrajectoryHelper.clear(in: self)
-//            jumpDirection = 0
-//            dragStartPos = nil
-//            dragCurrentPos = nil
-//        }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first, let start = dragStartPos else { return }
