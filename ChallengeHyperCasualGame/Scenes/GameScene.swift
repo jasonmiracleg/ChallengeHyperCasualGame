@@ -33,6 +33,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var startJumpPosition: CGPoint?
     var score: UInt32 = 0
     var scoreLabel: SKLabelNode!
+    var startOverlay: SKNode?
 
     //background and asset
     var backgroundManager: BackgroundManager!
@@ -49,28 +50,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     override func didMove(to view: SKView) {
-        physicsWorld.contactDelegate = self
-        physicsWorld.gravity = CGVector(dx: 0, dy: -9.8)
-        backgroundManager = BackgroundManager(in: self)
-        decorationSpawner = DecorationSpawner(in: self)
-
-        camera = Camera.createCamera(for: self)
-        player = Player(in: self)
-        platforms = Platform.createInitialPlatforms(in: self)
-        if let firstPlatform = platforms.first {
-            EnvironmentFactory.addInitialEnvironment(
-                below: firstPlatform,
-                in: self
-            )
-        }
-        
-        SoundManager.playBackgroundMusic(fileName: "bgm.mp3")
-        SoundManager.preloadEffect(fileName: "launch.mp3", volume: 0.8)
-        SoundManager.preloadEffect(fileName: "land.mp3", volume: 0.5)
-        
-        restartButton = RestartButton.create(in: self)
-        Wall.createWalls(in: self)
-//        createScoreLabel()
+        setupGame()
+        showStartOverlay()
+        showTutorial()
     }
     
     func didBegin(_ contact: SKPhysicsContact) {
@@ -165,24 +147,33 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
+
+        // If overlay is visible, start the game and show trajectory
+        if startOverlay != nil {
+            hideStartOverlay()  // fade out and remove start overlay
+            dragStartPos = location
+            return
+        }
+
+        // Normal game touch logic
         jumpDirection = location.x < frame.midX ? -1 : 1
         dragStartPos = location
 
-        if player.isIdle(), let start = dragStartPos,
-            let current = dragCurrentPos
-        {
-            TrajectoryHelper.show(
-                from: start,
-                to: current,
-                in: self
-            )
+        if player.isIdle(), let start = dragStartPos, let current = dragCurrentPos {
+            TrajectoryHelper.show(from: start, to: current, in: self)
         }
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         dragCurrentPos = touch.location(in: self)
-        
+
+        // Start overlay drag logic
+        if startOverlay != nil {
+            // Immediately hide start screen if user drags
+            hideStartOverlay()
+        }
+
         if player.isIdle(), let start = dragStartPos, let current = dragCurrentPos {
             TrajectoryHelper.show(from: start, to: current, in: self)
         }
@@ -311,5 +302,108 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             SKAction.wait(forDuration: 1.0),
             SKAction.removeFromParent()
         ]))
+    }
+    
+    private func setupGame() {
+        physicsWorld.contactDelegate = self
+        physicsWorld.gravity = CGVector(dx: 0, dy: -9.8)
+        backgroundManager = BackgroundManager(in: self)
+        decorationSpawner = DecorationSpawner(in: self)
+        camera = Camera.createCamera(for: self)
+        player = Player(in: self)
+        platforms = Platform.createInitialPlatforms(in: self)
+        if let firstPlatform = platforms.first {
+            EnvironmentFactory.addInitialEnvironment(
+                below: firstPlatform,
+                in: self
+            )
+        }
+        SoundManager.playBackgroundMusic(fileName: "bgm.mp3")
+        SoundManager.preloadEffect(fileName: "launch.mp3", volume: 0.8)
+        SoundManager.preloadEffect(fileName: "land.mp3", volume: 0.3)
+        restartButton = RestartButton.create(in: self)
+        Wall.createWalls(in: self)
+        createScoreLabel()
+    }
+
+    private func showStartOverlay() {
+        startOverlay = SKNode()
+
+        let background = SKSpriteNode(
+            color: UIColor.black.withAlphaComponent(0.2),
+            size: CGSize(width: size.width, height: size.height + 100)  // buffer at bottom
+        )
+        
+        background.position = CGPoint(x: frame.midX, y: frame.midY - 50) // center shift
+        background.zPosition = 100
+        startOverlay?.addChild(background)
+
+        let nameLabel = SKSpriteNode(imageNamed: "title_white")
+        nameLabel.position = CGPoint(x: frame.midX, y: frame.midY + 200)
+        nameLabel.size = CGSize(width: 300, height: 200)
+        nameLabel.zPosition = 101
+        startOverlay?.addChild(nameLabel)
+        
+        let scoreLabel = SKLabelNode(text: "000")
+        scoreLabel.fontName = "Arial-BoldMT"
+        scoreLabel.fontSize = 42
+        scoreLabel.setScale(1.5)
+        scoreLabel.fontColor = .white
+        scoreLabel.position = CGPoint(x: frame.midX, y: frame.midY + 25)
+        scoreLabel.zPosition = 101
+        startOverlay?.addChild(scoreLabel)
+        
+        let bestScoreLabel = SKLabelNode(text: "Best Score")
+        bestScoreLabel.fontName = "Arial-BoldMT"
+        bestScoreLabel.fontSize = 18
+        bestScoreLabel.fontColor = .white
+        bestScoreLabel.position = CGPoint(x: frame.midX, y: frame.midY)
+        bestScoreLabel.zPosition = 101
+        startOverlay?.addChild(bestScoreLabel)
+
+        let gameButton = SKSpriteNode(
+            color: UIColor.white.withAlphaComponent(0),
+            size: self.size
+        )
+        gameButton.name = "playButton"
+        gameButton.position = CGPoint(x: frame.midX, y: frame.midY)
+        gameButton.zPosition = 102
+        startOverlay?.addChild(gameButton)
+        
+        let instructionLabel = SKLabelNode(text: "Drag to Start")
+        instructionLabel.fontName = "Arial-BoldMT"
+        instructionLabel.fontSize = 18
+        instructionLabel.fontColor = .white
+        instructionLabel.position = CGPoint(x: frame.midX, y: frame.midY - 100)
+        instructionLabel.zPosition = 101
+        startOverlay?.addChild(instructionLabel)
+        
+        let fadeOut = SKAction.fadeAlpha(to: 0.2, duration: 0.8)
+        let fadeIn = SKAction.fadeAlpha(to: 1.0, duration: 0.6)
+        let blinkSequence = SKAction.sequence([fadeOut, fadeIn])
+        let blinkForever = SKAction.repeatForever(blinkSequence)
+        instructionLabel.run(blinkForever)
+
+        addChild(startOverlay!)
+    }
+
+    private func hideStartOverlay() {
+        guard let overlay = startOverlay else { return }
+
+        let fadeOut = SKAction.fadeOut(withDuration: 0.5)
+        let remove = SKAction.removeFromParent()
+
+        overlay.run(SKAction.sequence([fadeOut, remove]))
+        startOverlay = nil
+    }
+    
+    private func showTutorial() {
+        let swipeLabel = SKLabelNode(text: "← Swipe →")
+        swipeLabel.fontName = "Arial-BoldMT"
+        swipeLabel.fontSize = 18
+        swipeLabel.fontColor = .white
+        swipeLabel.position = CGPoint(x: frame.midX + 100, y: frame.maxY + 50)
+        swipeLabel.zPosition = 101
+        addChild(swipeLabel)
     }
 }
