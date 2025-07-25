@@ -59,6 +59,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // debug
     var detectedContact: Int = 0
     
+    // game over
+    var isGameOver = false
+    var isRestart = false
+    var gameOverUI: GameOverUI!
+    
     override init(size: CGSize) {
         super.init(size: size)
     }
@@ -69,8 +74,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     override func didMove(to view: SKView) {
         setupGame()
-        showStartOverlay()
-        showTutorial()
+//        showStartOverlay()
+//        showTutorial()
+        if !isRestart {
+             showStartOverlay()
+             showTutorial()
+         }
         createScoreLabel()
         createDynamicScoreLabel()
         
@@ -257,8 +266,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         backgroundManager.update(playerY: player.position.y)
         decorationSpawner.update(playerY: player.position.y)
         
-        if player.position.y < camera!.position.y - 400 {
-            print("Game Over")
+        if !isGameOver && player.position.y < camera!.position.y - 400 {
+//            print("Game Over")
+            triggerGameOver()
         }
     }
     
@@ -420,7 +430,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         SoundManager.playBackgroundMusic(fileName: "bgm.mp3")
         SoundManager.preloadEffect(fileName: "launch.mp3", volume: 0.8)
         SoundManager.preloadEffect(fileName: "land.mp3", volume: 0.3)
-        restartButton = RestartButton.create(in: self)
+//        restartButton = RestartButton.create(in: self)
         Wall.createWalls(in: self)
     }
 
@@ -504,4 +514,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         swipeLabel.zPosition = 101
         addChild(swipeLabel)
     }
+    
+    private func triggerGameOver() {
+         isGameOver = true
+
+         gameOverUI = GameOverUI()
+         gameOverUI.position = CGPoint(x: 0, y: 0) // center of the camera view
+         camera?.addChild(gameOverUI) // <-- add to camera, not the scene!
+         
+         gameOverUI.showGameOver(score: score)
+     }
 }

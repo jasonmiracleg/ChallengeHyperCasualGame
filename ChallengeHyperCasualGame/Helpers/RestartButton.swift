@@ -16,7 +16,6 @@ enum RestartButton {
         button.position = CGPoint(x: scene.frame.midX - 100, y: (scene.camera?.position.y ?? 0) - 100)
         button.zPosition = 1000
         button.name = "restartButton"
-        scene.camera?.addChild(button)
         return button
     }
 }
