@@ -349,7 +349,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         scoreLabel.fontColor = .white
         scoreLabel.position = CGPoint(
             x: frame.midX - 200,
-            y: camera?.position.y ?? 0 - 300
+            y: camera!.position.y - 300
         )
 
         camera?.addChild(scoreLabel)
