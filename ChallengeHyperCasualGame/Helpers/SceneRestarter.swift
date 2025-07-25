@@ -11,8 +11,12 @@ enum SceneRestarter {
     static func restart(scene: SKScene) {
         if let view = scene.view {
             Platform.resetPlatformCounts()
+
             let newScene = GameScene(size: scene.size)
             newScene.scaleMode = scene.scaleMode
+            newScene.isRestart = true
+            newScene.isGameOver = false
+
             view.presentScene(newScene, transition: .fade(withDuration: 0.5))
         }
     }
