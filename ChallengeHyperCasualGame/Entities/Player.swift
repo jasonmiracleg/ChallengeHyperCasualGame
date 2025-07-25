@@ -14,7 +14,7 @@ class Player: SKNode {
     let bodySize: CGSize = CGSize(width: 20, height: 40)
     let capSize: CGSize = CGSize(width: 10, height: 5)
     private var capOffsetY: CGFloat {
-        return bodySize.height/2 + capSize.height/2
+        return bodySize.height/2 + capSize.height/2 + 7
     }
     
     init(in scene: SKScene) {
