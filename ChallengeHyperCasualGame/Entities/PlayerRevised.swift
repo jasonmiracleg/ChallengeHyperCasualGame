@@ -34,6 +34,8 @@ class PlayerRevised: SKNode {
         self.addChild(bottleBody)
         self.addChild(bottleCap)
         self.addChild(bottomSensor)
+        
+        
         self.name = "PlayerRevised"
         
         scene.addChild(self)
@@ -227,10 +229,4 @@ class PlayerRevised: SKNode {
         body.angularVelocity = CGFloat.random(in: -2.0...2.0)
     }
     
-}
-
-enum LandingType: String {
-    case normal = "Normal"
-    case bottomSensor = "Bottom"
-    case bottleCap = "Top"
 }

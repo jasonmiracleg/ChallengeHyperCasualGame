@@ -10,11 +10,12 @@ import SpriteKit
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
     // player
-    var player: PlayerRevised!
+    var player: Player!
 
     // platforms
     var platforms: [SKSpriteNode] = []
     let platformCategory = PhysicsCategory.platform.rawValue
+    
     var lastPlatformX: CGFloat = 0
 
     // launch
@@ -37,10 +38,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     //scoring
     var lastPlatform: SKSpriteNode!
+    var candidateLandingPlatform: SKSpriteNode!
     var score: Int = 0
     var scoreLabel: SKLabelNode!
     var highscoreLabel: SKLabelNode!
+    var dynamicScoreLabel: SKLabelNode!
     let highscore = UserDefaults.standard.integer(forKey: "highscore")
+    var scoreMultiplier = 1
+    var checkMultiplier: Bool = false
+    var keepScoreMultiplier: Bool = true
     
     // debug
     var detectedContact: Int = 0
@@ -60,7 +66,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         decorationSpawner = DecorationSpawner(in: self)
         
         camera = Camera.createCamera(for: self)
-        player = PlayerRevised(in: self)
+        player = Player(in: self)
         platforms = Platform.createInitialPlatforms(in: self)
         if let firstPlatform = platforms.first {
             EnvironmentFactory.addInitialEnvironment(below: firstPlatform, in: self)
@@ -70,177 +76,53 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         Wall.createWalls(in: self)
         createScoreLabel()
         createHighscoreLabel()
+        createDynamicScoreLabel()
     }
 
-//    func didBegin(_ contact: SKPhysicsContact) {
-//        guard let nodeA = contact.bodyA.node,
-//              let nodeB = contact.bodyB.node else { return }
-//
-//        let categoryA = PhysicsCategory(rawValue: contact.bodyA.categoryBitMask)
-//        let categoryB = PhysicsCategory(rawValue: contact.bodyB.categoryBitMask)
-//
-//        // Handle Player <-> Platform
-//        if categoryA.contains(.player) && categoryB.contains(.platform),
-//           let platform = nodeB as? SKSpriteNode {
-//            handlePlatformContact(playerNode: nodeA, platform: platform, contact: contact)
-//        } else if categoryB.contains(.player) && categoryA.contains(.platform),
-//                  let platform = nodeA as? SKSpriteNode {
-//            handlePlatformContact(playerNode: nodeB, platform: platform, contact: contact)
-//        }
-//    }
-//
-//    private func handlePlatformContact(playerNode: SKNode, platform: SKSpriteNode, contact: SKPhysicsContact) {
-//        // Convert the contact point to the platform's local space
-//        let contactInPlatform = platform.convert(contact.contactPoint, from: scene!)
-//        let topThreshold: CGFloat = 10.0
-//
-//        if contactInPlatform.y >= platform.frame.size.height / 2 - topThreshold {
-//            print("Player landed on top of platform")
-//            player.dampenLandingVelocity()
-//
-//            // Main score (for landing at all)
-//            if platform.userData?["hasBeenLandedOn"] as? Bool != true {
-//                updateScore()
-//                platform.userData?["hasBeenLandedOn"] = true
-//            }
-//
-//            // Bonus: only give if bottleCap or bottomSensor made contact
-//            let contactNodes = [contact.bodyA.node, contact.bodyB.node].compactMap { $0 }
-//
-//            if contactNodes.contains(where: { $0.name == "bottomSensor" })
-////                ,platform.userData?["hasBeenLandedOn"] as? Bool != true
-//            {
-//                print("BOTTOM: TOUCHED")
-//                updateScore(by: 2)
-//                platform.userData?["hasBeenLandedOn"] = true
-//                print("Bonus +1 for bottom sensor (on valid landing)")
-//            } else {
-//                print("BOTTOM: UNTOUCHED")
-//            }
-//
-//            if contactNodes.contains(where: { $0.name == "bottleCap" })
-////                ,platform.userData?["hasBeenLandedOn"] as? Bool != true
-//            {
-//                print("TOP: TOUCHED")
-//                updateScore(by: 3)
-//                platform.userData?["hasBeenLandedOn"] = true
-//                print("Bonus +2 for bottle cap (on valid landing)")
-//            } else {
-//                print("TOP: UNTOUCHED")
-//            }
-//
-//            // Platform behavior triggers
-//            if let type = platform.userData?["type"] as? PlatformType {
-//                switch type {
-//                case .collapsed:
-//                    if platform.userData?["collapseStarted"] == nil {
-//                        platform.userData?["collapseStarted"] = true
-//                        Platform.collapse(platform)
-//                    }
-//                case .moving:
-//                    platform.userData?["isStopped"] = true
-//                default:
-//                    break
-//                }
-//            }
-//        }
-//
-//    }
-    
-    /// Utility to sort physics bodies based on bit mask
-    private func sortBodies(_ bodyA: SKPhysicsBody, _ bodyB: SKPhysicsBody) -> (SKPhysicsBody, SKPhysicsBody) {
-        return bodyA.categoryBitMask < bodyB.categoryBitMask ? (bodyA, bodyB) : (bodyB, bodyA)
-    }
-    
     func didBegin(_ contact: SKPhysicsContact) {
         guard let nodeA = contact.bodyA.node,
               let nodeB = contact.bodyB.node else { return }
 
-        let bodyA = contact.bodyA
-        let bodyB = contact.bodyB
-        
-        // Optional: Sort them for easier comparison
-        let (first, second) = sortBodies(bodyA, bodyB)
-        
-        print("=== Contact Detected \(detectedContact) ===")
-        print("Body A: \(String(describing: nodeA.name))")
-        print(" - Category: \(bodyA.categoryBitMask)")
-        print("Body B: \(String(describing: nodeB.name))")
-        print(" - Category: \(bodyB.categoryBitMask)")
+        let categoryA = PhysicsCategory(rawValue: contact.bodyA.categoryBitMask)
+        let categoryB = PhysicsCategory(rawValue: contact.bodyB.categoryBitMask)
 
-//        let playerNode: SKNode = {
-//            if categoryA.contains(.player) || categoryA.contains(.topSensor) || categoryA.contains(.bottomSensor) {
-//                return nodeA
-//            } else {
-//                return nodeB
-//            }
-//        }()
-//        let platformNode = categoryA.contains(.platform) ? nodeA : nodeB
-//
-//        guard let platform = platformNode as? SKSpriteNode else { return }
-//
-//        // Determine which part hit the platform
-//        if playerNode.name == "bottomSensor" {
-//            print("If else bottom sensor")
-//            handleLanding(playerNode: playerNode, platform: platform, contact: contact, landingType: .bottomSensor)
-//        } else if playerNode.name == "bottleCap" {
-//            print("If else top sensor")
-//            handleLanding(playerNode: playerNode, platform: platform, contact: contact, landingType: .bottleCap)
-//        } else {
-//            print("If else normal sensor")
-//            // Fallback: assume generic body
-//            // Optional: add threshold check for top of platform
-//            let contactInPlatform = platform.convert(contact.contactPoint, from: scene!)
-//            let topThreshold: CGFloat = 10.0
-//            if contactInPlatform.y >= platform.size.height / 2 - topThreshold {
-//                handleLanding(playerNode: playerNode, platform: platform, contact: contact, landingType: .normal)
-//            }
-//        }
-        
-        detectedContact += 1
+        // Handle Player <-> Platform
+        if categoryA.contains(.player) && categoryB.contains(.platform),
+           let platform = nodeB as? SKSpriteNode {
+            handlePlatformContact(playerNode: nodeA, platform: platform, contact: contact)
+        } else if categoryB.contains(.player) && categoryA.contains(.platform),
+                  let platform = nodeA as? SKSpriteNode {
+            handlePlatformContact(playerNode: nodeB, platform: platform, contact: contact)
+        }
     }
 
-    
-    private func handleLanding(playerNode: SKNode, platform: SKSpriteNode, contact: SKPhysicsContact, landingType: LandingType) {
-        print("\(landingType.rawValue): TOUCHED")
+    private func handlePlatformContact(playerNode: SKNode, platform: SKSpriteNode, contact: SKPhysicsContact) {
+        // Convert the contact point to the platform's local space
+        let contactInPlatform = platform.convert(contact.contactPoint, from: scene!)
+        let topThreshold: CGFloat = 10.0
 
-        let userData = platform.userData ?? NSMutableDictionary()
-        platform.userData = userData
+        if contactInPlatform.y >= platform.frame.size.height / 2 - topThreshold {
+            player.dampenLandingVelocity()
+            candidateLandingPlatform = platform
+            checkMultiplier = true
+//            keepScoreMultiplier = true
 
-        if userData["hasBeenLandedOn"] as? Bool != true {
-            // Base score for any valid landing
-            updateScore()
-
-            // Bonus based on type
-            switch landingType {
-            case .bottomSensor:
-                updateScore(by: 2)
-            case .bottleCap:
-                updateScore(by: 3)
-            default:
-                break
-            }
-
-            print("Bonus +\(landingType == .bottomSensor ? 2 : landingType == .bottleCap ? 3 : 0) for \(landingType.rawValue.lowercased()) landing")
-            userData["hasBeenLandedOn"] = true
-        }
-
-        // Trigger platform behavior (once per landing)
-        if let type = userData["type"] as? PlatformType {
-            switch type {
-            case .collapsed:
-                if userData["collapseStarted"] == nil {
-                    userData["collapseStarted"] = true
-                    Platform.collapse(platform)
+            // Platform behavior triggers
+            if let type = platform.userData?["type"] as? PlatformType {
+                switch type {
+                case .collapsed:
+                    if platform.userData?["collapseStarted"] == nil {
+                        platform.userData?["collapseStarted"] = true
+                        Platform.collapse(platform)
+                    }
+                case .moving:
+                    platform.userData?["isStopped"] = true
+                default:
+                    break
                 }
-            case .moving:
-                userData["isStopped"] = true
-            default:
-                break
             }
         }
 
-        player.dampenLandingVelocity()
     }
 
     
@@ -285,21 +167,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     
-//    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-//        guard let touch = touches.first, let start = dragStartPos else { return }
-//        let location = touch.location(in: self)
-//        
-//        if nodes(at: location).contains(where: { $0.name == "restartButton" }) {
-//            SceneRestarter.restart(scene: self)
-//            return
-//        }
-//        
-//        player.handleJump(from: start, to: location)
-//        TrajectoryHelper.clear(in: self)
-//        jumpDirection = 0
-//        dragStartPos = nil
-//    }
-    
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first, let start = dragStartPos else {
             return
@@ -315,6 +182,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         if player.isIdle() {
             player.handleJump(from: start, to: location)
+            keepScoreMultiplier = false
         } else {
             player.handleSpin(from: start, to: location)
         }
@@ -349,6 +217,45 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 startJumpPosition = player.position
             }
         }
+        
+//        scoring purposes
+        if abs(velocity.dy) == 0.0 && abs (velocity.dx) == 0.0 && checkMultiplier {
+            checkMultiplier = false
+            
+            if let candidate = candidateLandingPlatform{
+                if candidate.userData?["hasBeenLandedOn"] as? Bool != true{
+                    candidate.userData?["hasBeenLandedOn"] = true
+                    
+                    switch player.checkRotation(){
+                    case .bottleCap:
+                        updateScore(by: scoreMultiplier * 3)
+                        print("Player landed A CAP FLIP")
+                        break
+                    case .standing:
+                        updateScore(by: scoreMultiplier * 2)
+                        print("Player landed A FLIP")
+                        break
+                    default:
+                        updateScore(by: scoreMultiplier)
+                        print("Player landed")
+                        break
+                    }
+                    
+                    keepScoreMultiplier = true
+                    lastPlatform = candidate
+                } else {
+                    if !keepScoreMultiplier {
+                        scoreMultiplier = 1
+                    }
+                    keepScoreMultiplier = true
+                }
+            }
+            
+            candidateLandingPlatform = nil
+        }
+        
+        updateDynamicScoreLabel(points: scoreMultiplier)
+//        ==> until here
 
         Platform.updateMovingPlatforms(in: self)
         backgroundManager.update(playerY: player.position.y)
@@ -381,6 +288,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         camera?.addChild(highscoreLabel)
     }
     
+    func createDynamicScoreLabel(){
+        dynamicScoreLabel = SKLabelNode(text: "+0")
+        dynamicScoreLabel.fontName = "AvenirNext-Bold"
+        dynamicScoreLabel.fontSize = 16
+        dynamicScoreLabel.fontColor = .white
+        dynamicScoreLabel.position = CGPoint(
+            x: player.position.x,
+            y: player.position.y
+        )
+        
+        camera?.addChild(dynamicScoreLabel)
+    }
+    
+    func updateDynamicScoreLabel(points: Int){
+        dynamicScoreLabel.text = "+\(points)"
+        dynamicScoreLabel.position = CGPoint(
+            // WHAT IS PLAYER POSITION?????
+            x: player.position.x - 30,
+            y: player.position.y - 30 - Camera.minCameraY
+        )
+    }
+    
     func updateScore(by points: Int = 1) {
         score += points
         scoreLabel.text = "\(score)"
@@ -411,5 +340,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
         return false
+    }
+    
+    func isPlayer(on platform: SKSpriteNode) -> Bool {
+        let verticalTolerance: CGFloat = 2.0
+        let playerBottomY = player.frame.minY
+        let platformTopY = platform.frame.maxY
+
+        let isHorizontallyAligned =
+            player.frame.maxX > platform.frame.minX &&
+            player.frame.minX < platform.frame.maxX
+
+        let isVerticallyOnTop =
+            abs(playerBottomY - platformTopY) <= verticalTolerance
+
+        return isHorizontallyAligned && isVerticallyOnTop
     }
 }

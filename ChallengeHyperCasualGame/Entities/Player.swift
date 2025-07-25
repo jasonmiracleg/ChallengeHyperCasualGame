@@ -41,9 +41,10 @@ class Player: SKNode {
         setupPhysics(size: bodySize)
         setupSensors(size: bodySize)
         
+        self.addChild(bottomSensor)
+        self.addChild(topSensor)
         self.addChild(bottleBody)
         self.addChild(bottleCap)
-        
         
         scene.addChild(self)
     }
@@ -53,21 +54,6 @@ class Player: SKNode {
     }
     
     private func setupBottleCap(offsetY: CGFloat, size: CGSize) {
-//            bottleCap.fillColor = .darkGray
-//            bottleCap.strokeColor = .red // Use red outline for visibility
-//            bottleCap.lineWidth = 1
-//            bottleCap.zPosition = 1
-            
-            // Centered path so that the shape aligns correctly with the physics body
-            let rect = CGRect(
-                x: -size.width / 2,
-                y: -size.height / 2,
-                width: size.width,
-                height: size.height
-            )
-//        bottleCap.path = CGPath(rect: rect, transform: nil)
-            
-        // Position cap visually at the same Y offset as its physics body center
         bottleCap.position = CGPoint(x: 0, y: offsetY)
     }
 
@@ -197,7 +183,7 @@ class Player: SKNode {
     }
     
     func isIdle() -> Bool {
-        guard let body = self.physicsBody else { return false}
+        guard let body = self.physicsBody else { return false }
 
         let velocity = body.velocity
         let speedThreshold: CGFloat = 1
@@ -205,6 +191,20 @@ class Player: SKNode {
             return true
         } else {
             return false
+        }
+    }
+    
+    func checkRotation() -> LandingType {
+        // Convert radians to degrees
+        let degrees = abs(zRotation * 180 / .pi).truncatingRemainder(dividingBy: 360)
+        let tolerance: CGFloat = 10
+
+        if abs(degrees - 0) <= tolerance || abs(degrees - 360) <= tolerance {
+            return .standing
+        } else if abs(degrees - 180) <= tolerance {
+            return .bottleCap
+        } else {
+            return .normal
         }
     }
     
@@ -218,4 +218,10 @@ class Player: SKNode {
         body.angularVelocity = CGFloat.random(in: -2.0...2.0)
     }
 
+}
+
+enum LandingType: String {
+    case normal = "Normal"
+    case standing = "Standing"
+    case bottleCap = "Bottle Cap"
 }
