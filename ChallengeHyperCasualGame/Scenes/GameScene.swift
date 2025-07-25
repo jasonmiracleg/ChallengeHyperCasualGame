@@ -64,6 +64,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var isRestart = false
     var gameOverUI: GameOverUI!
     
+    // Sound Control
+    var hasPlayed = false
+    
     override init(size: CGSize) {
         super.init(size: size)
     }
@@ -427,10 +430,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 in: self
             )
         }
-        SoundManager.playBackgroundMusic(fileName: "bgm.mp3")
+        // Toggle Playing BGM
+        if !hasPlayed {
+            SoundManager.playBackgroundMusic(fileName: "bgm.mp3")
+        }
         SoundManager.preloadEffect(fileName: "launch.mp3", volume: 0.8)
         SoundManager.preloadEffect(fileName: "land.mp3", volume: 0.3)
-//        restartButton = RestartButton.create(in: self)
         Wall.createWalls(in: self)
     }
 
