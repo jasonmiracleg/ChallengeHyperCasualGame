@@ -67,7 +67,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         showStartOverlay()
         showTutorial()
         createScoreLabel()
-        createHighscoreLabel()
         createDynamicScoreLabel()
     }
     
@@ -161,7 +160,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             player.dampenLandingVelocity()
             candidateLandingPlatform = platform
             checkMultiplier = true
-//            keepScoreMultiplier = true
 
             // Platform behavior triggers
             if let type = platform.userData?["type"] as? PlatformType {
@@ -443,7 +441,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         SoundManager.preloadEffect(fileName: "land.mp3", volume: 0.3)
         restartButton = RestartButton.create(in: self)
         Wall.createWalls(in: self)
-        createScoreLabel()
     }
 
     private func showStartOverlay() {

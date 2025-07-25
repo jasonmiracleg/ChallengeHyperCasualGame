@@ -10,47 +10,33 @@ import SpriteKit
 class Player: SKNode {
     let bottleBody: SKSpriteNode
     let bottleCap: SKSpriteNode
-    let topSensor: SKNode
-    let bottomSensor: SKNode
     
     init(in scene: SKScene) {
         let bodySize = CGSize(width: 20, height: 40)
         let capSize = CGSize(width: 10, height: 5)
         
+        let offsetY = bodySize.height/2 + capSize.height/2
+        
         bottleBody = SKSpriteNode(imageNamed: "bottle_body")
         bottleCap = SKSpriteNode(imageNamed: "bottle_cap")
-        
-        bottomSensor = SKNode()
-        topSensor = SKNode()
         
         super.init()
         self.position = CGPoint(x: scene.frame.midX, y: 100)
         bottleBody.zPosition = 10
+        bottleBody.position = .zero
         bottleCap.zPosition = 11
+        bottleCap.position = CGPoint(x: 0, y: offsetY)
         
         let scaleFactor: CGFloat = 0.15
         bottleBody.setScale(scaleFactor)
         bottleCap.setScale(scaleFactor)
         
-        setupBottleBody()
-        setupBottleCap(offsetY: bodySize.height/2 + capSize.height/2, size: capSize)
         setupPhysics(size: bodySize)
-        setupSensors(size: bodySize)
-        
-        self.addChild(bottomSensor)
-        self.addChild(topSensor)
+
         self.addChild(bottleBody)
         self.addChild(bottleCap)
         
         scene.addChild(self)
-    }
-    
-    private func setupBottleBody() {
-        bottleBody.position = .zero
-    }
-    
-    private func setupBottleCap(offsetY: CGFloat, size: CGSize) {
-        bottleCap.position = CGPoint(x: 0, y: offsetY)
     }
     
     private func setupPhysics(size: CGSize) {
@@ -71,54 +57,6 @@ class Player: SKNode {
         combinedBody.collisionBitMask = PhysicsCategory.platform.rawValue | PhysicsCategory.wall.rawValue
         
         self.physicsBody = combinedBody
-    }
-    
-    private func setupSensors(size: CGSize) {
-        let capHeight: CGFloat = 5
-        let sensorWidth = size.width * 0.8
-        let sensorHeight: CGFloat = 2.0
-
-        // Position bottom sensor just below the bottle base
-        bottomSensor.position = CGPoint(x: 0, y: -size.height / 2 - sensorHeight - 2) // 2pt extra margin
-        let bottomPhysics = SKPhysicsBody(rectangleOf: CGSize(width: sensorWidth, height: sensorHeight))
-        bottomPhysics.isDynamic = false
-        bottomPhysics.affectedByGravity = false
-        bottomPhysics.categoryBitMask = PhysicsCategory.bottomSensor.rawValue
-        bottomPhysics.contactTestBitMask = PhysicsCategory.platform.rawValue | PhysicsCategory.wall.rawValue
-        bottomPhysics.collisionBitMask = 0
-        bottomPhysics.usesPreciseCollisionDetection = true
-        bottomSensor.physicsBody = bottomPhysics
-        bottomSensor.name = "bottomSensor" // Name for debug/contact checking
-        
-        // Debug shape for bottom sensor
-//        #if DEBUG
-        let bottomDebug = SKShapeNode(rectOf: CGSize(width: sensorWidth, height: sensorHeight))
-        bottomDebug.fillColor = .red
-        bottomDebug.strokeColor = .clear
-        bottomDebug.zPosition = 1000
-        bottomSensor.addChild(bottomDebug)
-//        #endif
-
-        // Position top sensor just above the cap
-        topSensor.position = CGPoint(x: 0, y: size.height / 2 + capHeight + sensorHeight + 2)
-        let topPhysics = SKPhysicsBody(rectangleOf: CGSize(width: sensorWidth, height: sensorHeight))
-        topPhysics.isDynamic = false
-        topPhysics.affectedByGravity = false
-        topPhysics.categoryBitMask = PhysicsCategory.topSensor.rawValue
-        topPhysics.contactTestBitMask = PhysicsCategory.platform.rawValue | PhysicsCategory.wall.rawValue
-        topPhysics.collisionBitMask = 0
-        topPhysics.usesPreciseCollisionDetection = true
-        topSensor.physicsBody = topPhysics
-        topSensor.name = "topSensor" // Name for debug/contact checking
-        
-        // Debug shape for top sensor
-//        #if DEBUG
-        let topDebug = SKShapeNode(rectOf: CGSize(width: sensorWidth, height: sensorHeight))
-        topDebug.fillColor = .blue
-        topDebug.strokeColor = .clear
-        topDebug.zPosition = 1000
-        topSensor.addChild(topDebug)
-//        #endif
     }
     
     func handleJump(from startPos: CGPoint, to endPos: CGPoint) {
