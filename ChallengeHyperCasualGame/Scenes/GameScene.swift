@@ -38,7 +38,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var backgroundManager: BackgroundManager!
     var decorationSpawner: DecorationSpawner!
     
-    private var lastPrintTime: TimeInterval = 0  // Tambahkan ini di kelas GameScene
+    var lastWallContactTime: CFTimeInterval = 0.0
 
     override init(size: CGSize) {
         super.init(size: size)
@@ -87,6 +87,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         } else if categoryB.contains(.player) && categoryA.contains(.platform),
                   let platform = nodeA as? SKSpriteNode {
             handlePlatformContact(playerNode: nodeB, platform: platform, contact: contact)
+        }
+        
+        // Handle Player <-> Wall
+        if (categoryA.contains(.player) && categoryB.contains(.wall)) ||
+           (categoryB.contains(.player) && categoryA.contains(.wall)) {
+            
+            let currentTime = CACurrentMediaTime()
+            if currentTime - lastWallContactTime > 0.2 {
+                lastWallContactTime = currentTime
+                
+                DispatchQueue.main.async {
+                    let impact = UIImpactFeedbackGenerator(style: .medium)
+                    impact.prepare()
+                    impact.impactOccurred()
+                }
+            }
         }
 
     }
