@@ -31,8 +31,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // misc
     var restartButton: SKLabelNode!
     var startJumpPosition: CGPoint?
-    var score: UInt32 = 0
-    var scoreLabel: SKLabelNode!
     var startOverlay: SKNode?
 
     //background and asset
@@ -68,6 +66,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         setupGame()
         showStartOverlay()
         showTutorial()
+        createScoreLabel()
+        createHighscoreLabel()
+        createDynamicScoreLabel()
     }
     
     func didBegin(_ contact: SKPhysicsContact) {
@@ -149,7 +150,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     default:
                         let dustParticle = Particles.createDustEmitter()
                         applyParticles(particle: dustParticle, object: playerNode)
-        // Convert the contact point to the platform's local space
+                    }
+                }
+            }
+        }
         let contactInPlatform = platform.convert(contact.contactPoint, from: scene!)
         let topThreshold: CGFloat = 10.0
 
@@ -179,20 +183,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
 
-    }
-
-    
-    func didEnd(_ contact: SKPhysicsContact) {
-        let bodyA = contact.bodyA.node
-        let bodyB = contact.bodyB.node
-
-        if let platform = bodyA as? SKSpriteNode, platform.name == "moving" {
-            platform.userData?["isStopped"] = false
-        } else if let platform = bodyB as? SKSpriteNode,
-            platform.name == "moving"
-        {
-            platform.userData?["isStopped"] = false
-        }
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -413,15 +403,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let verticalTolerance: CGFloat = 2.0
         let playerBottomY = player.frame.minY
         let platformTopY = platform.frame.maxY
-
+        
         let isHorizontallyAligned =
-            player.frame.maxX > platform.frame.minX &&
-            player.frame.minX < platform.frame.maxX
-
+        player.frame.maxX > platform.frame.minX &&
+        player.frame.minX < platform.frame.maxX
+        
         let isVerticallyOnTop =
-            abs(playerBottomY - platformTopY) <= verticalTolerance
-
+        abs(playerBottomY - platformTopY) <= verticalTolerance
+        
         return isHorizontallyAligned && isVerticallyOnTop
+    }
+    
     private func applyParticles(particle: SKEmitterNode, object: SKNode) {
         particle.position = CGPoint(x: object.position.x, y: object.position.y)
         addChild(particle)
