@@ -14,8 +14,12 @@ enum PlatformType {
 }
 
 enum Platform {
+    // Tracking Platform Counts
     private static var platformCounts: Int = 0
+    
+    // Platform Size & Distribution
     private static let platformWidths = [100, 120, 140]
+    private static let platformWeights = [0.25, 0.5, 0.25]
     
     // MARK: - Create Single Platform
     static func createPlatform(
@@ -139,20 +143,20 @@ enum Platform {
         
         for i in 0..<10 {
             var y = CGFloat(i) * 200 + 100
-            var randomWidth = platformWidths.randomElement()!
+            var randomWidth = getRandomPlatformWidth()
             var height = 20
             var x: CGFloat
             
             if i == 0 {
                 x = scene.frame.midX
                 y = scene.frame.minY + (20 / 2)
-                randomWidth = Int(scene.frame.width)
+                randomWidth = scene.frame.width
                 height = 100
             } else if i <= fixedPlatformPositions.count {
                 let fixedPosition = fixedPlatformPositions[i-1]
                 x = fixedPosition.x
                 y = fixedPosition.y * CGFloat(i) + 100
-                randomWidth = i < fixedPlatformPositions.count ? platformWidths[i-1] : platformWidths[2]
+                randomWidth = i < fixedPlatformPositions.count ? CGFloat(platformWidths[i-1]) : CGFloat(platformWidths[2])
             } else {
                 // Random placement
                 let halfWidth = CGFloat(randomWidth) / 2
@@ -417,6 +421,20 @@ enum Platform {
                 scene.addChild(wall)
             }
         }
+    }
+    
+    // MARK: Randomize Platform Width
+    private static func getRandomPlatformWidth() -> CGFloat {
+        let random = Double.random(in: 0..<1)
+        var cumulativeProbability: Double = 0
+        
+        for (index, weight) in platformWeights.enumerated() {
+            cumulativeProbability += weight
+            if random < cumulativeProbability {
+                return CGFloat(platformWidths[index])
+            }
+        }
+        return CGFloat(platformWidths.last!)
     }
     
     // MARK: - Update Moving Platforms
