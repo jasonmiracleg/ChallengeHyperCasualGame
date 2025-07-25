@@ -37,10 +37,10 @@ class Player: SKNode {
         setupPhysics(size: bodySize)
         setupSensors(size: bodySize)
         
-        self.addChild(bottleBody)
-        self.addChild(bottleCap)
         self.addChild(bottomSensor)
         self.addChild(topSensor)
+        self.addChild(bottleBody)
+        self.addChild(bottleCap)
         
         scene.addChild(self)
     }
@@ -50,8 +50,7 @@ class Player: SKNode {
     }
     
     private func setupBottleCap(offsetY: CGFloat, size: CGSize) {
-        let capOffsetY = size.height / 2 + bottleCap.size.height / 2
-        bottleCap.position = CGPoint(x: 0, y: capOffsetY + 23)
+        bottleCap.position = CGPoint(x: 0, y: offsetY)
     }
     
     private func setupPhysics(size: CGSize) {
@@ -75,8 +74,13 @@ class Player: SKNode {
     }
     
     private func setupSensors(size: CGSize) {
-        bottomSensor.position = CGPoint(x: 0, y: -size.height / 2)
-        let bottomPhysics = SKPhysicsBody(rectangleOf: CGSize(width: size.width * 0.8, height: 2))
+        let capHeight: CGFloat = 5
+        let sensorWidth = size.width * 0.8
+        let sensorHeight: CGFloat = 2.0
+
+        // Position bottom sensor just below the bottle base
+        bottomSensor.position = CGPoint(x: 0, y: -size.height / 2 - sensorHeight - 2) // 2pt extra margin
+        let bottomPhysics = SKPhysicsBody(rectangleOf: CGSize(width: sensorWidth, height: sensorHeight))
         bottomPhysics.isDynamic = false
         bottomPhysics.affectedByGravity = false
         bottomPhysics.categoryBitMask = PhysicsCategory.bottomSensor.rawValue
@@ -84,9 +88,20 @@ class Player: SKNode {
         bottomPhysics.collisionBitMask = 0
         bottomPhysics.usesPreciseCollisionDetection = true
         bottomSensor.physicsBody = bottomPhysics
+        bottomSensor.name = "bottomSensor" // Name for debug/contact checking
         
-        topSensor.position = CGPoint(x: 0, y: size.height / 2)
-        let topPhysics = SKPhysicsBody(rectangleOf: CGSize(width: size.width * 0.8, height: 2))
+        // Debug shape for bottom sensor
+//        #if DEBUG
+        let bottomDebug = SKShapeNode(rectOf: CGSize(width: sensorWidth, height: sensorHeight))
+        bottomDebug.fillColor = .red
+        bottomDebug.strokeColor = .clear
+        bottomDebug.zPosition = 1000
+        bottomSensor.addChild(bottomDebug)
+//        #endif
+
+        // Position top sensor just above the cap
+        topSensor.position = CGPoint(x: 0, y: size.height / 2 + capHeight + sensorHeight + 2)
+        let topPhysics = SKPhysicsBody(rectangleOf: CGSize(width: sensorWidth, height: sensorHeight))
         topPhysics.isDynamic = false
         topPhysics.affectedByGravity = false
         topPhysics.categoryBitMask = PhysicsCategory.topSensor.rawValue
@@ -94,6 +109,16 @@ class Player: SKNode {
         topPhysics.collisionBitMask = 0
         topPhysics.usesPreciseCollisionDetection = true
         topSensor.physicsBody = topPhysics
+        topSensor.name = "topSensor" // Name for debug/contact checking
+        
+        // Debug shape for top sensor
+//        #if DEBUG
+        let topDebug = SKShapeNode(rectOf: CGSize(width: sensorWidth, height: sensorHeight))
+        topDebug.fillColor = .blue
+        topDebug.strokeColor = .clear
+        topDebug.zPosition = 1000
+        topSensor.addChild(topDebug)
+//        #endif
     }
     
     func handleJump(from startPos: CGPoint, to endPos: CGPoint) {
@@ -131,15 +156,41 @@ class Player: SKNode {
         }
     }
     
+    func dampenLandingVelocity() {
+        guard let body = self.physicsBody else { return }
+
+        // Reduce vertical velocity to minimize bounce
+        let reducedVelocity = CGVector(
+            dx: body.velocity.dx * 0.1,  // Optional: Slightly reduce horizontal speed
+            dy: body.velocity.dy * 0.1   // Reduce bounce by dampening Y velocity
+        )
+
+        body.velocity = reducedVelocity
+    }
+    
     func isIdle() -> Bool {
-        guard let body = self.physicsBody else { return false}
-        
+        guard let body = self.physicsBody else { return false }
+
         let velocity = body.velocity
         let speedThreshold: CGFloat = 1
         if abs(velocity.dy) < speedThreshold {
             return true
         } else {
             return false
+        }
+    }
+    
+    func checkRotation() -> LandingType {
+        // Convert radians to degrees
+        let degrees = abs(zRotation * 180 / .pi).truncatingRemainder(dividingBy: 360)
+        let tolerance: CGFloat = 10
+
+        if abs(degrees - 0) <= tolerance || abs(degrees - 360) <= tolerance {
+            return .standing
+        } else if abs(degrees - 180) <= tolerance {
+            return .bottleCap
+        } else {
+            return .normal
         }
     }
     
@@ -152,4 +203,10 @@ class Player: SKNode {
         body.velocity = CGVector(dx: 0, dy: 1600)
         body.angularVelocity = CGFloat.random(in: -2.0...2.0)
     }
+}
+
+enum LandingType: String {
+    case normal = "Normal"
+    case standing = "Standing"
+    case bottleCap = "Bottle Cap"
 }

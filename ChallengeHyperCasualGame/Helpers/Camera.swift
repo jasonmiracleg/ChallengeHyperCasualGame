@@ -9,6 +9,8 @@
 import SpriteKit
 
 enum Camera {
+    static var minCameraY: CGFloat = 0
+    
     static func createCamera(for scene: SKScene) -> SKCameraNode {
         let camera = SKCameraNode()
         camera.position = CGPoint(x: scene.frame.midX, y: scene.frame.midY)
@@ -20,7 +22,7 @@ enum Camera {
         guard let camera = camera else { return }
 
         let lowestPlatformY = scene.platforms.map { $0.position.y }.min() ?? 0
-        let minCameraY = lowestPlatformY + 400
+        minCameraY = lowestPlatformY + 400
 
         if player.position.y > camera.position.y {
             camera.position.y = player.position.y

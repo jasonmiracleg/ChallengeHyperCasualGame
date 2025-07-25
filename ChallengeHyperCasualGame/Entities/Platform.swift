@@ -114,8 +114,8 @@ enum Platform {
         
         body.isDynamic = false
         body.categoryBitMask = PhysicsCategory.platform.rawValue
-        body.contactTestBitMask = PhysicsCategory.player.rawValue | PhysicsCategory.topSensor.rawValue
-        body.collisionBitMask = PhysicsCategory.player.rawValue | PhysicsCategory.topSensor.rawValue
+        body.contactTestBitMask = PhysicsCategory.player.rawValue | PhysicsCategory.topSensor.rawValue | PhysicsCategory.bottomSensor.rawValue
+        body.collisionBitMask = PhysicsCategory.player.rawValue | PhysicsCategory.topSensor.rawValue | PhysicsCategory.bottomSensor.rawValue
         body.friction = 1.0
         
         platform.physicsBody = body
@@ -183,6 +183,10 @@ enum Platform {
                 in: scene,
                 index: i
             )
+            
+            if i == 0 {
+                platform.userData?["hasBeenLandedOn"] = true
+            }
             
             // --- Wall spawning ---
             if let previous = previousPlatform {
@@ -422,7 +426,7 @@ enum Platform {
                   let speed = platform.userData?["speed"] as? CGFloat,
                   let leftLimit = platform.userData?["leftLimit"] as? CGFloat,
                   let rightLimit = platform.userData?["rightLimit"] as? CGFloat,
-                  (platform.userData?["hasBeenLandedOn"] as? Bool) != true
+                  (platform.userData?["isStopped"] as? Bool) != true
             else { continue }
             
             platform.position.x += direction * speed * deltaTime
