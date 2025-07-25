@@ -70,7 +70,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         restartButton = RestartButton.create(in: self)
         Wall.createWalls(in: self)
-        createScoreLabel()
+//        createScoreLabel()
     }
     
     func didBegin(_ contact: SKPhysicsContact) {
@@ -127,37 +127,38 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let isTopContactByPosition = contactPoint.y >= (platformTop - 20.0)
         
         if isTopContactByNormal || isTopContactByPosition {
-        // Convert the contact point to the platform's local space
-        let contactInPlatform = platform.convert(contact.contactPoint, from: scene!)
-
-        let topThreshold: CGFloat = 10.0
-
-        // Check if player landed on top of the platform
-        if contactInPlatform.y >= platform.frame.size.height / 2 - topThreshold {
+            // Convert the contact point to the platform's local space
+            let contactInPlatform = platform.convert(contact.contactPoint, from: scene!)
             
-            print("Player landed on top of platform")
-
-            platform.userData?["hasBeenLandedOn"] = true
+            let topThreshold: CGFloat = 10.0
             
-            if let type = platform.userData?["type"] as? PlatformType {
-                switch type {
-                case .collapsed:
-                    if platform.userData?["collapseStarted"] == nil {
-                        platform.userData?["collapseStarted"] = true
-                        Platform.collapse(platform)
-                    } else {
+            // Check if player landed on top of the platform
+            if contactInPlatform.y >= platform.frame.size.height / 2 - topThreshold {
+                
+                print("Player landed on top of platform")
+                
+                platform.userData?["hasBeenLandedOn"] = true
+                
+                if let type = platform.userData?["type"] as? PlatformType {
+                    switch type {
+                    case .collapsed:
+                        if platform.userData?["collapseStarted"] == nil {
+                            platform.userData?["collapseStarted"] = true
+                            Platform.collapse(platform)
+                        } else {
+                        }
+                    case .moving:
+                        platform.userData?["isStopped"] = true
+                    default:
+                        let dustParticle = Particles.createDustEmitter()
+                        applyParticles(particle: dustParticle, object: playerNode)
                     }
-                case .moving:
-                    platform.userData?["isStopped"] = true
-                default:
-                    let dustParticle = Particles.createDustEmitter()
-                    applyParticles(particle: dustParticle, object: playerNode)
                 }
+                
+                SoundManager.playEffect(fileName: "land.mp3")
+            } else {
+                print("Player hit side or bottom of platform – no special logic triggered")
             }
-            
-            SoundManager.playEffect(fileName: "land.mp3")
-        } else {
-            print("Player hit side or bottom of platform – no special logic triggered")
         }
     }
     
