@@ -5,60 +5,86 @@
 //  Created by Wardatul Amalia Safitri on 25/07/25.
 //
 
-
 import SpriteKit
 
 class GameOverUI: SKNode {
     
     var restartButton: SKSpriteNode!
+    var dividerRectangle: SKSpriteNode!
     var scoreLabel: SKLabelNode!
+    var scoreTextLabel: SKLabelNode!
+    var bestScoreTextLabel: SKLabelNode!
+    var bottle_overlay: SKSpriteNode!
+    var bestScoreNumberTextLabel: SKLabelNode!
+    var bottle_image: SKSpriteNode!
     
     override init() {
         super.init()
         setupUI()
     }
-
+    
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
         setupUI()
     }
     
     private func setupUI() {
-        // Create the background overlay
-        let background = SKSpriteNode(color: .black, size: CGSize(width: 400, height: 300))
+        let background = SKSpriteNode(imageNamed: "gameover_background_overlay")
+        background.setScale(0.35)
         background.position = CGPoint(x: 0, y: 0)
-        background.alpha = 0.7
+        background.zPosition = 15
+        background.alpha = 1
         addChild(background)
-
-        // Create the score label
-        scoreLabel = SKLabelNode(text: "Score: 0")
-        scoreLabel.fontName = "AvenirNext-Bold"
-        scoreLabel.fontSize = 32
+        
+        bottle_image = SKSpriteNode(imageNamed: "gameover_bottle_image")
+        bottle_image.setScale(0.15)
+        bottle_image.position = CGPoint(x: 0, y: 120)
+        bottle_image.zPosition = 16
+        bottle_image.alpha = 1
+        bottle_image.zRotation = -(CGFloat.pi / 4)
+        addChild(bottle_image)
+        
+        let bottle_overlay = SKSpriteNode(imageNamed: "gameover_bottle_overlay")
+        bottle_overlay.setScale(0.25)
+        bottle_overlay.position = CGPoint(x: 0, y: 100)
+        bottle_overlay.zPosition = 14
+        bottle_overlay.alpha = 1
+        bottle_overlay.zRotation = -(CGFloat.pi / 4)
+        addChild(bottle_overlay)
+        
+        scoreLabel = SKLabelNode(text: "0")
+        scoreLabel.fontName = "ArialRoundedMTBold"
+        scoreLabel.fontSize = 64
+        scoreLabel.zPosition = 16
         scoreLabel.fontColor = .white
-        scoreLabel.position = CGPoint(x: 0, y: 50)
+        scoreLabel.position = CGPoint(x: 0, y: -64)
         addChild(scoreLabel)
         
-        // Create the restart button
-        restartButton = SKSpriteNode(color: .green, size: CGSize(width: 200, height: 60))
-        restartButton.position = CGPoint(x: 0, y: -50)
-        restartButton.name = "restartButton"
-        addChild(restartButton)
+        bestScoreNumberTextLabel = SKLabelNode(text: "012")
+        bestScoreNumberTextLabel.fontName = "ArialRoundedMTBold"
+        bestScoreNumberTextLabel.fontSize = 52
+        bestScoreNumberTextLabel.zPosition = 16
+        bestScoreNumberTextLabel.fontColor = .white
+        bestScoreNumberTextLabel.position = CGPoint(x: 0, y: -180)
+        addChild(bestScoreNumberTextLabel)
         
-        // Add a label to the restart button
-        let restartLabel = SKLabelNode(text: "Restart")
-        restartLabel.fontName = "AvenirNext-Bold"
-        restartLabel.fontSize = 24
-        restartLabel.fontColor = .white
-        restartLabel.position = CGPoint(x: 0, y: 0)
-        restartButton.addChild(restartLabel)
+        restartButton = SKSpriteNode(imageNamed: "gameover_restart_button")
+        restartButton.setScale(0.3)
+        restartButton.position = CGPoint(x: 0, y: -250)
+        restartButton.name = "restartButton"
+        restartButton.zPosition = 16
+        addChild(restartButton)
     }
-
+    
     func showGameOver(score: Int) {
-        // Show the game over UI
-        scoreLabel.text = "Score: \(score)"
+        scoreLabel.text = "\(score)"
         self.isHidden = false
+        
+        let rotateAction = SKAction.rotate(byAngle: CGFloat.pi * 2, duration: 8.0)
+        let infiniteRotation = SKAction.repeatForever(rotateAction)
+        bottle_image.run(infiniteRotation, withKey: "rotateForever")
     }
-
+    
     func hideGameOver() {
         self.isHidden = true
     }

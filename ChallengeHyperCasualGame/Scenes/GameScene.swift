@@ -31,14 +31,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var restartButton: SKLabelNode!
     var startJumpPosition: CGPoint?
     var startOverlay: SKNode?
-
+    
     //background and asset
     var backgroundManager: BackgroundManager!
     var decorationSpawner: DecorationSpawner!
     
     var lastWallContactTime: CFTimeInterval = 0.0 // <-- This is part of background and asset variable??
-
-//    scoring
+    
+    //    scoring
     var score: Int = 0
     var scoreMultiplier: Int = 1 // <-- only here in case we wanna do combo shit
     let highscore = UserDefaults.standard.integer(forKey: "highscore")
@@ -67,20 +67,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override init(size: CGSize) {
         super.init(size: size)
     }
-
+    
     required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
     }
-
+    
     override func didMove(to view: SKView) {
         setupGame()
-//        showStartOverlay()
-//        showTutorial()
+        //        showStartOverlay()
+        //        showTutorial()
         if !isRestart {
-             showStartOverlay()
-             showTutorial()
-         }
+            showStartOverlay()
+            showTutorial()
+        }
         createScoreLabel()
+//        createGameOverButton()
         createDynamicScoreLabel()
         
         print("BUILD SUCCESSFULL\n\n\n\n\n")
@@ -92,7 +93,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         let categoryA = PhysicsCategory(rawValue: contact.bodyA.categoryBitMask)
         let categoryB = PhysicsCategory(rawValue: contact.bodyB.categoryBitMask)
-
+        
         // Handle Player <-> Platform
         if categoryA.contains(.player) && categoryB.contains(.platform),
            let platform = nodeB as? SKSpriteNode {
@@ -104,7 +105,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Handle Player <-> Wall
         if (categoryA.contains(.player) && categoryB.contains(.wall)) ||
-           (categoryB.contains(.player) && categoryA.contains(.wall)) {
+            (categoryB.contains(.player) && categoryA.contains(.wall)) {
             
             let currentTime = CACurrentMediaTime()
             if currentTime - lastWallContactTime > 0.2 {
@@ -117,7 +118,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 }
             }
         }
-
+        
     }
     
     func didEnd(_ contact: SKPhysicsContact) {
@@ -133,7 +134,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     private func handlePlatformContact(playerNode: SKNode, platform: SKSpriteNode, contact: SKPhysicsContact) {
-
+        
         let contactInPlatform = platform.convert(contact.contactPoint, from: scene!)
         let topThreshold: CGFloat = 10.0
         
@@ -173,37 +174,37 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         
     }
-
+    
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
-
+        
         // If overlay is visible, start the game and show trajectory
         if startOverlay != nil {
             hideStartOverlay()  // fade out and remove start overlay
             dragStartPos = location
             return
         }
-
+        
         // Normal game touch logic
         jumpDirection = location.x < frame.midX ? -1 : 1
         dragStartPos = location
-
+        
         if player.isIdle(), let start = dragStartPos, let current = dragCurrentPos {
             TrajectoryHelper.show(from: start, to: current, in: self)
         }
     }
-
+    
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         dragCurrentPos = touch.location(in: self)
-
+        
         // Start overlay drag logic
         if startOverlay != nil {
             // Immediately hide start screen if user drags
             hideStartOverlay()
         }
-
+        
         if player.isIdle(), let start = dragStartPos, let current = dragCurrentPos {
             TrajectoryHelper.show(from: start, to: current, in: self)
         }
@@ -218,6 +219,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if nodes(at: location).contains(where: { $0.name == "restartButton" }) {
             updateHighscore()
             SceneRestarter.restart(scene: self)
+            return
+        }
+        
+        if nodes(at: location).contains(where: { $0.name == "gameOverButton" }) {
+            triggerGameOver()
             return
         }
         
@@ -236,7 +242,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         dragStartPos = nil
         dragCurrentPos = nil
     }
-
+    
     override func update(_ currentTime: TimeInterval) {
         Camera.follow(player: player, camera: camera, scene: self)
         Wall.updateWalls(in: self)
@@ -252,7 +258,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 startJumpPosition = player.position
                 return
             }
-
+            
             if (player.position.y - startY) > 20 {
                 score += 1
                 scoreLabel.text = "\(score)"
@@ -261,31 +267,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         
         handleScoring()
-
+        
         Platform.updateMovingPlatforms(in: self)
         backgroundManager.update(playerY: player.position.y)
         decorationSpawner.update(playerY: player.position.y)
         
         if !isGameOver && player.position.y < camera!.position.y - 400 {
-//            print("Game Over")
             triggerGameOver()
         }
     }
     
     func isPlayerOnPlatform() -> Bool {
         let verticalTolerance: CGFloat = 2.0
-
+        
         for platform in platforms {
             let playerBottomY = player.frame.minY
             let platformTopY = platform.frame.maxY
-
+            
             let isHorizontallyAligned =
-                player.frame.maxX > platform.frame.minX
-                && player.frame.minX < platform.frame.maxX
-
+            player.frame.maxX > platform.frame.minX
+            && player.frame.minX < platform.frame.maxX
+            
             let isVerticallyOnTop =
-                abs(playerBottomY - platformTopY) <= verticalTolerance
-
+            abs(playerBottomY - platformTopY) <= verticalTolerance
+            
             if isHorizontallyAligned && isVerticallyOnTop {
                 return true
             }
@@ -303,7 +308,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ]))
     }
     
-//    === scoring relevant functions
     func handleScoring(){
         let velocity = player.physicsBody?.velocity ?? .zero
         
@@ -311,44 +315,44 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             print("passed first if, setting check to false")
             checkMultiplier = false
-                    
+            
             if let candidate = candidateLandingPlatform{
                 print("got Candidate Landing Platform")
                 if candidate.userData?["hasBeenLandedOn"] as? Bool != true{
                     print("Has not been landed on, set to tru")
                     candidate.userData?["hasBeenLandedOn"] = true
-                            
+                    
                     switch player.checkRotation(){
-                        case .bottleCap:
-                            updateScore(by: scoreMultiplier * 3)
-                            print("Player landed A CAP FLIP")
-                            break
-                        case .standing:
-                            updateScore(by: scoreMultiplier * 2)
-                            print("Player landed A FLIP")
-                            break
-                        default:
-                            updateScore(by: scoreMultiplier)
-                            print("Player landed")
-                            break
-                        }
-                        
-                        keepScoreMultiplier = true
-                        lastPlatform = candidate
-                    } else {
-                        print("Has been landed on, no points")
-                        if !keepScoreMultiplier {
-                            scoreMultiplier = 1
-                        }
-                        keepScoreMultiplier = true
+                    case .bottleCap:
+                        updateScore(by: scoreMultiplier * 3)
+                        print("Player landed A CAP FLIP")
+                        break
+                    case .standing:
+                        updateScore(by: scoreMultiplier * 2)
+                        print("Player landed A FLIP")
+                        break
+                    default:
+                        updateScore(by: scoreMultiplier)
+                        print("Player landed")
+                        break
                     }
+                    
+                    keepScoreMultiplier = true
+                    lastPlatform = candidate
+                } else {
+                    print("Has been landed on, no points")
+                    if !keepScoreMultiplier {
+                        scoreMultiplier = 1
+                    }
+                    keepScoreMultiplier = true
                 }
-                
-                candidateLandingPlatform = nil
-            print("score: \(score)")
             }
             
-            updateDynamicScoreLabel(points: scoreMultiplier)
+            candidateLandingPlatform = nil
+            print("score: \(score)")
+        }
+        
+        updateDynamicScoreLabel(points: scoreMultiplier)
     }
     
     //labels
@@ -359,9 +363,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         scoreLabel.fontColor = .white
         scoreLabel.position = CGPoint(
             x: frame.midX - 200,
-            y: camera!.position.y - 300
+            y: camera!.position.y - 300,
         )
-
+        
         camera?.addChild(scoreLabel)
     }
     
@@ -411,14 +415,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             UserDefaults.standard.set(score, forKey: "highscore")
         }
     }
-//    scoring relevant functions ===
+    //    scoring relevant functions ===
     
     private func setupGame() {
         physicsWorld.contactDelegate = self
         physicsWorld.gravity = CGVector(dx: 0, dy: -9.8)
-        backgroundManager = BackgroundManager(in: self)
-        decorationSpawner = DecorationSpawner(in: self)
         camera = Camera.createCamera(for: self)
+        backgroundManager = BackgroundManager(in: self)
+        backgroundManager.addStaticTopOverlay(named: "background_overlay", scale: 0.7)
+        decorationSpawner = DecorationSpawner(in: self)
         player = Player(in: self)
         platforms = Platform.createInitialPlatforms(in: self)
         if let firstPlatform = platforms.first {
@@ -430,22 +435,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         SoundManager.playBackgroundMusic(fileName: "bgm.mp3")
         SoundManager.preloadEffect(fileName: "launch.mp3", volume: 0.8)
         SoundManager.preloadEffect(fileName: "land.mp3", volume: 0.3)
-//        restartButton = RestartButton.create(in: self)
+        //        restartButton = RestartButton.create(in: self)
         Wall.createWalls(in: self)
     }
-
+    
     private func showStartOverlay() {
         startOverlay = SKNode()
-
+        
         let background = SKSpriteNode(
             color: UIColor.black.withAlphaComponent(0.2),
-            size: CGSize(width: size.width, height: size.height + 100)  // buffer at bottom
+            size: CGSize(width: size.width, height: size.height + 100)
         )
         
-        background.position = CGPoint(x: frame.midX, y: frame.midY - 50) // center shift
+        background.position = CGPoint(x: frame.midX, y: frame.midY - 50)
         background.zPosition = 100
         startOverlay?.addChild(background)
-
+        
         let nameLabel = SKSpriteNode(imageNamed: "title_white")
         nameLabel.position = CGPoint(x: frame.midX, y: frame.midY + 200)
         nameLabel.size = CGSize(width: 300, height: 200)
@@ -468,7 +473,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         bestScoreLabel.position = CGPoint(x: frame.midX, y: frame.midY)
         bestScoreLabel.zPosition = 101
         startOverlay?.addChild(bestScoreLabel)
-
+        
         let gameButton = SKSpriteNode(
             color: UIColor.white.withAlphaComponent(0),
             size: self.size
@@ -491,16 +496,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let blinkSequence = SKAction.sequence([fadeOut, fadeIn])
         let blinkForever = SKAction.repeatForever(blinkSequence)
         instructionLabel.run(blinkForever)
-
+        
         addChild(startOverlay!)
     }
-
+    
     private func hideStartOverlay() {
         guard let overlay = startOverlay else { return }
-
+        
         let fadeOut = SKAction.fadeOut(withDuration: 0.5)
         let remove = SKAction.removeFromParent()
-
+        
         overlay.run(SKAction.sequence([fadeOut, remove]))
         startOverlay = nil
     }
@@ -516,12 +521,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     private func triggerGameOver() {
-         isGameOver = true
-
-         gameOverUI = GameOverUI()
-         gameOverUI.position = CGPoint(x: 0, y: 0) // center of the camera view
-         camera?.addChild(gameOverUI) // <-- add to camera, not the scene!
-         
-         gameOverUI.showGameOver(score: score)
-     }
+        isGameOver = true
+        scoreLabel.isHidden = true
+        dynamicScoreLabel.isHidden = true
+        gameOverUI = GameOverUI()
+        gameOverUI.position = CGPoint(x: 0, y: 0)
+        camera?.addChild(gameOverUI)
+        
+        gameOverUI.showGameOver(score: score)
+    }
+    
+//    func createGameOverButton() {
+//        let gameOverButton = SKLabelNode(text: "Game Over")
+//        gameOverButton.name = "gameOverButton"
+//        gameOverButton.fontName = "AvenirNext-Bold"
+//        gameOverButton.fontSize = 24
+//        gameOverButton.fontColor = .white
+//        gameOverButton.zPosition = 9999
+//        gameOverButton.position = CGPoint(x: 70, y: 320)
+//        
+//        camera?.addChild(gameOverButton)
+//        
+//        print("Game Over Button created at camera center")
+//    }
 }
