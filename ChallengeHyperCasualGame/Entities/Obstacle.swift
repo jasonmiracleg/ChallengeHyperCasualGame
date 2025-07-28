@@ -20,9 +20,10 @@ enum Obstacle {
         
         // Determining the Wall Position
         let offsetX: CGFloat = targetPlatformX + (isLeft ? -(targetPlatformWidth / 2 + 10) : (targetPlatformWidth / 2 + 10))
-        let offsetY: CGFloat = targetPlatformY + 80
+        let offsetY: CGFloat = targetPlatformY + 100
         
         wall.position = CGPoint(x: offsetX, y: offsetY)
+        wall.name = "wall"
         
         wall.physicsBody = SKPhysicsBody(rectangleOf: wall.size)
         wall.physicsBody?.isDynamic = false
