@@ -328,7 +328,7 @@ enum Platform {
         let fadeOut = SKAction.fadeOut(withDuration: 0.5)
         
         let collapseSequence = SKAction.sequence([
-            SKAction.wait(forDuration: 3),
+            SKAction.wait(forDuration: 1.5),
             shake,
             fadeOut
         ])

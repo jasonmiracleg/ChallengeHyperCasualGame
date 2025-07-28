@@ -170,8 +170,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 case .moving:
                     platform.userData?["isStopped"] = true
                 default:
-                    let dustParticle = Particles.createDustEmitter()
-                    applyParticles(particle: dustParticle, object: playerNode)
+                    break
                 }
             }
         }
@@ -325,13 +324,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     print("Has not been landed on, set to tru")
                     candidate.userData?["hasBeenLandedOn"] = true
                     
+                    let dustParticle = Particles.createDustEmitter()
+                    
                     switch player.checkRotation(){
                     case .bottleCap:
                         updateScore(by: scoreMultiplier * 3)
+                        applyParticles(particle: dustParticle, object: player)
                         print("Player landed A CAP FLIP")
                         break
                     case .standing:
                         updateScore(by: scoreMultiplier * 2)
+                        applyParticles(particle: dustParticle, object: player)
                         print("Player landed A FLIP")
                         break
                     default:
