@@ -16,6 +16,7 @@ enum SceneRestarter {
             newScene.scaleMode = scene.scaleMode
             newScene.isRestart = true
             newScene.isGameOver = false
+            newScene.hasPlayed = true
 
             view.presentScene(newScene, transition: .fade(withDuration: 0.5))
         }

@@ -14,8 +14,16 @@ enum PlatformType {
 }
 
 enum Platform {
+    // Tracking Platform Counts
     private static var platformCounts: Int = 0
+    
+    // Platform Size & Distribution
     private static let platformWidths = [100, 120, 140]
+    private static let platformWeights = [0.25, 0.5, 0.25]
+    
+    // Platform Distance Distribution
+    private static let platformDistance = [225, 250, 275]
+    private static let platformDistanceWeights = [0.15, 0.60, 0.25]
     
     // MARK: - Create Single Platform
     static func createPlatform(
@@ -35,7 +43,11 @@ enum Platform {
             platform.zPosition = -10
         } else {
             let textureName: String
-            let widthInt = Int(width)
+            var widthInt = Int(width)
+            
+            if type == .moving || type == .collapsed {
+                widthInt = 120
+            }
             
             switch type {
             case .collapsed:
@@ -129,34 +141,35 @@ enum Platform {
     static func createInitialPlatforms(in scene: GameScene) -> [SKSpriteNode] {
         var platforms: [SKSpriteNode] = []
         var lastX = scene.frame.midX
+        var currentY = scene.frame.minY + (20 / 2)
         
-        let fixedPlatformPositions: [CGPoint] = [
-            CGPoint(x: scene.frame.midX + 100, y: 200),
-            CGPoint(x: scene.frame.midX - 100, y: 200),
-            CGPoint(x: scene.frame.midX + 100, y: 200),
-            CGPoint(x: scene.frame.midX - 100, y: 200)
+        let fixedPlatformOffsets: [CGFloat] = [300, 500, 700, 900] // Y offsets for fixed platforms
+        let fixedPlatformX: [CGFloat] = [
+            scene.frame.midX + 100,
+            scene.frame.midX - 100,
+            scene.frame.midX + 100,
+            scene.frame.midX - 100
         ]
         
         for i in 0..<10 {
-            var y = CGFloat(i) * 200 + 100
-            var randomWidth = platformWidths.randomElement()!
+            var randomWidth = getRandomPlatformWidth()
             var height = 20
             var x: CGFloat
             
             if i == 0 {
                 x = scene.frame.midX
-                y = scene.frame.minY + (20 / 2)
-                randomWidth = Int(scene.frame.width)
+                randomWidth = scene.frame.width
                 height = 100
-            } else if i <= fixedPlatformPositions.count {
-                let fixedPosition = fixedPlatformPositions[i-1]
-                x = fixedPosition.x
-                y = fixedPosition.y * CGFloat(i) + 100
-                randomWidth = i < fixedPlatformPositions.count ? platformWidths[i-1] : platformWidths[2]
+                currentY = scene.frame.minY + CGFloat(height / 2)
+            } else if i <= fixedPlatformOffsets.count {
+                x = fixedPlatformX[i - 1]
+                currentY = fixedPlatformOffsets[i - 1]
+                randomWidth = i < fixedPlatformX.count ? CGFloat(platformWidths[i-1]) : CGFloat(platformWidths[2])
             } else {
                 // Random placement
-                let halfWidth = CGFloat(randomWidth) / 2
-                x = platformPlacement(scene: scene, lastX: lastX, halfWidth: halfWidth)
+                let halfWidth = randomWidth / 2
+                x = platformPlacement(scene: scene, lastX: lastX, lastWidth: halfWidth, newWidth: CGFloat(randomWidth))
+                currentY += getRandomPlatformDistance()
             }
             
             let previousPlatform = platforms.last
@@ -177,7 +190,7 @@ enum Platform {
             }()
             
             let platform = createPlatform(
-                at: CGPoint(x: x, y: y),
+                at: CGPoint(x: x, y: currentY),
                 type: type,
                 width: CGFloat(randomWidth),
                 height: CGFloat(height),
@@ -224,8 +237,8 @@ enum Platform {
         while newPlatforms.count < 10 {
             let randomWidth = platformWidths.randomElement()!
             let halfWidth = CGFloat(randomWidth) / 2
-            let x = platformPlacement(scene: scene, lastX: lastPlatformX, halfWidth: halfWidth)
-            let y = (newPlatforms.last?.position.y ?? 0) + 200
+            let x = platformPlacement(scene: scene, lastX: lastPlatformX, lastWidth: halfWidth, newWidth: CGFloat(randomWidth))
+            let y = (newPlatforms.last?.position.y ?? 0) + getRandomPlatformDistance()
             
             let previousPlatform = newPlatforms.last
             
@@ -270,21 +283,33 @@ enum Platform {
     
     // MARK: - Moving Platform Logic
     static func configureMovingPlatform(_ platform: SKSpriteNode, width: CGFloat, in scene: GameScene) {
+        let margin: CGFloat = 10  // Safe margin from edges
         let halfWidth = width / 2
-        let leftLimit = halfWidth
-        let rightLimit = scene.frame.width - halfWidth
         
+        let leftLimit = halfWidth + margin
+        let rightLimit = scene.frame.width - halfWidth - margin
+        
+        // Randomize start direction
         let speed: CGFloat = 150  // points per second
-        
+        let direction: CGFloat = Bool.random() ? 1.0 : -1.0
+
         if platform.userData == nil {
             platform.userData = NSMutableDictionary()
         }
-        platform.userData?["direction"] = 1.0
+        platform.userData?["direction"] = direction
         platform.userData?["speed"] = speed
         platform.userData?["leftLimit"] = leftLimit
         platform.userData?["rightLimit"] = rightLimit
         platform.userData?["isStopped"] = false
+        
+        // Clamp initial position to ensure it's inside the limits
+        if platform.position.x < leftLimit {
+            platform.position.x = leftLimit
+        } else if platform.position.x > rightLimit {
+            platform.position.x = rightLimit
+        }
     }
+
     
     
     // MARK: - Collapsing Platform Logic
@@ -298,13 +323,12 @@ enum Platform {
             SKAction.moveBy(x: -10, y: 0, duration: 0.1),
             SKAction.moveBy(x: 15, y: 0, duration: 0.05),
             SKAction.moveBy(x: -10, y: 0, duration: 0.1),
-            SKAction.moveBy(x: 5, y: 0, duration: 0.05)
         ])
         
         let fadeOut = SKAction.fadeOut(withDuration: 0.5)
         
         let collapseSequence = SKAction.sequence([
-            SKAction.wait(forDuration: 0.2),
+            SKAction.wait(forDuration: 3),
             shake,
             fadeOut
         ])
@@ -382,16 +406,18 @@ enum Platform {
     private static func platformPlacement(
         scene: GameScene,
         lastX: CGFloat,
-        halfWidth: CGFloat
+        lastWidth: CGFloat,
+        newWidth: CGFloat
     ) -> CGFloat {
         let wallWidth: CGFloat = 10
-        let safeGap: CGFloat = 100
+        let safeGap: CGFloat = 100  // minimal extra gap
         
-        let minX = scene.frame.minX + wallWidth + halfWidth
-        let maxX = scene.frame.maxX - wallWidth - halfWidth
+        let halfNewWidth = newWidth / 2
+        let minX = scene.frame.minX + wallWidth + halfNewWidth
+        let maxX = scene.frame.maxX - wallWidth - halfNewWidth
         
-        let forbiddenMin = max(minX, lastX - safeGap)
-        let forbiddenMax = min(maxX, lastX + safeGap)
+        let forbiddenMin = max(minX, lastX - (lastWidth / 2 + halfNewWidth + safeGap))
+        let forbiddenMax = min(maxX, lastX + (lastWidth / 2 + halfNewWidth + safeGap))
         
         var xCandidates = [CGFloat]()
         if forbiddenMin > minX {
@@ -418,6 +444,31 @@ enum Platform {
             }
         }
     }
+    
+    // MARK: - General Weighted Random Selector
+    private static func getWeightedRandom<T>(items: [T], weights: [Double]) -> T {
+        let random = Double.random(in: 0..<1)
+        var cumulativeProbability: Double = 0
+        
+        for (index, weight) in weights.enumerated() {
+            cumulativeProbability += weight
+            if random < cumulativeProbability {
+                return items[index]
+            }
+        }
+        return items.last!  // fallback
+    }
+
+    // MARK: - Randomize Platform Width
+    private static func getRandomPlatformWidth() -> CGFloat {
+        return CGFloat(getWeightedRandom(items: platformWidths, weights: platformWeights))
+    }
+
+    // MARK: - Randomize Platform Height
+    private static func getRandomPlatformDistance() -> CGFloat {
+        return CGFloat(getWeightedRandom(items: platformDistance, weights: platformDistanceWeights))
+    }
+
     
     // MARK: - Update Moving Platforms
     static func updateMovingPlatforms(in scene: GameScene) {
