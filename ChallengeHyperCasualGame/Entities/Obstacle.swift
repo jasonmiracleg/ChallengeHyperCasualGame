@@ -12,10 +12,11 @@ enum Obstacle {
     static func createWall(near targetPlatformPos: SKSpriteNode, currentPlatform: SKSpriteNode, scene: GameScene) -> SKSpriteNode? {
         if let type = targetPlatformPos.userData?["type"] as? PlatformType,
            (type == .moving || type == .collapsed) {
-            return nil  // Don't create wall for moving/collapsed platforms
+            return nil
         }
         
-        let wall = SKSpriteNode(color: .lightGray, size: CGSize(width: 10, height: 60))
+        let wallTexture = SKTexture(imageNamed: "wall_obstacle")
+        let wall = SKSpriteNode(texture: wallTexture)
         
         let targetPlatformWidth = targetPlatformPos.size.width
         let targetPlatformX = targetPlatformPos.position.x
@@ -23,12 +24,14 @@ enum Obstacle {
         
         let isLeft = targetPlatformX < currentPlatform.position.x
         
-        // Determining the Wall Position
         let offsetX: CGFloat = targetPlatformX + (isLeft ? (targetPlatformWidth / 2) : -(targetPlatformWidth / 2))
         let offsetY: CGFloat = targetPlatformY
         
         wall.position = CGPoint(x: offsetX, y: offsetY)
         wall.name = "wall"
+        
+        wall.xScale = 0.4
+        wall.yScale = 0.4
         
         wall.physicsBody = SKPhysicsBody(rectangleOf: wall.size)
         wall.physicsBody?.isDynamic = false
@@ -36,7 +39,6 @@ enum Obstacle {
         wall.physicsBody?.categoryBitMask = PhysicsCategory.wall.rawValue
         wall.physicsBody?.collisionBitMask = PhysicsCategory.player.rawValue
         wall.physicsBody?.contactTestBitMask = PhysicsCategory.player.rawValue
-        
         
         return wall
     }

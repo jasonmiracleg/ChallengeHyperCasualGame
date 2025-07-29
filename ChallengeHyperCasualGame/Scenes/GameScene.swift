@@ -540,10 +540,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         scoreLabel.isHidden = true
         dynamicScoreLabel.isHidden = true
         updateHighscore()
+        
         gameOverUI = GameOverUI()
         gameOverUI.position = CGPoint(x: 0, y: 0)
         camera?.addChild(gameOverUI)
         
+        gameOverUI.setHighScore(highScore: highscore)
         gameOverUI.showGameOver(score: score)
     }
     
