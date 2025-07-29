@@ -372,6 +372,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             y: camera!.position.y - 300,
         )
         
+        scoreLabel.alpha = 0
         camera?.addChild(scoreLabel)
     }
     
@@ -456,7 +457,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             size: CGSize(width: size.width, height: size.height + 100)
         )
         
-        background.position = CGPoint(x: frame.midX, y: frame.midY - 50)
+        background.position = CGPoint(x: frame.midX, y: frame.midY)
         background.zPosition = 100
         startOverlay?.addChild(background)
         
@@ -517,6 +518,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         overlay.run(SKAction.sequence([fadeOut, remove]))
         startOverlay = nil
+        
+        scoreLabel.run(SKAction.fadeIn(withDuration: 0.5))
     }
     
     private func showTutorial() {

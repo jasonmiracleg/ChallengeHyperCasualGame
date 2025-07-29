@@ -13,7 +13,7 @@ struct Particles {
         emitter.particleTexture = SKTexture(imageNamed: "star")
         emitter.particleBirthRate = 1 // Number of particles created per second
         emitter.numParticlesToEmit = 1 // The total number of particles to create before stopping.
-        emitter.particleLifetime = 0.8 // How long each particle stays alive (in seconds).
+        emitter.particleLifetime = 5 // How long each particle stays alive (in seconds).
         emitter.particleLifetimeRange = 0.2 // Adds a random variation to lifetime.
         emitter.particleSpeed = 50 // The initial speed at which particles move.
         emitter.particleSpeedRange = 30 // Adds randomness to speed.
