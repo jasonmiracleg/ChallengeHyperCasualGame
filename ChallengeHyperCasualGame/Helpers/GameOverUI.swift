@@ -17,6 +17,7 @@ class GameOverUI: SKNode {
     var bottle_overlay: SKSpriteNode!
     var bestScoreNumberTextLabel: SKLabelNode!
     var bottle_image: SKSpriteNode!
+    var highScore: Int = 0
     
     override init() {
         super.init()
@@ -60,17 +61,17 @@ class GameOverUI: SKNode {
         scoreLabel.position = CGPoint(x: 0, y: -64)
         addChild(scoreLabel)
         
-        bestScoreNumberTextLabel = SKLabelNode(text: "012")
+        bestScoreNumberTextLabel = SKLabelNode(text: "\(highScore)")
         bestScoreNumberTextLabel.fontName = "ArialRoundedMTBold"
-        bestScoreNumberTextLabel.fontSize = 52
+        bestScoreNumberTextLabel.fontSize = 40
         bestScoreNumberTextLabel.zPosition = 16
         bestScoreNumberTextLabel.fontColor = .white
-        bestScoreNumberTextLabel.position = CGPoint(x: 0, y: -180)
+        bestScoreNumberTextLabel.position = CGPoint(x: 0, y: -175)
         addChild(bestScoreNumberTextLabel)
         
         restartButton = SKSpriteNode(imageNamed: "gameover_restart_button")
         restartButton.setScale(0.3)
-        restartButton.position = CGPoint(x: 0, y: -250)
+        restartButton.position = CGPoint(x: 0, y: -240)
         restartButton.name = "restartButton"
         restartButton.zPosition = 16
         addChild(restartButton)
@@ -83,6 +84,11 @@ class GameOverUI: SKNode {
         let rotateAction = SKAction.rotate(byAngle: CGFloat.pi * 2, duration: 8.0)
         let infiniteRotation = SKAction.repeatForever(rotateAction)
         bottle_image.run(infiniteRotation, withKey: "rotateForever")
+    }
+    
+    func setHighScore(highScore: Int) {
+        self.highScore = highScore
+        bestScoreNumberTextLabel.text = "\(highScore)"
     }
     
     func hideGameOver() {

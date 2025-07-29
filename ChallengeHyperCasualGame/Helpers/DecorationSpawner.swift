@@ -9,7 +9,7 @@ class DecorationSpawner {
     weak var scene: SKScene?
     var lastDecorationY: CGFloat = 0
     let decorationGap: CGFloat = 300
-    let decorationNames = ["fish", "jellyfish", "trash", "fishnet"]
+    let decorationNames = ["fish", "jellyfish", "trash"]
     
     init(in scene: SKScene) {
         self.scene = scene
