@@ -469,7 +469,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         nameLabel.zPosition = 101
         startOverlay?.addChild(nameLabel)
         
-        let zscoreLabel = SKLabelNode(text: "000")
+        let zscoreLabel = SKLabelNode(text: "\(highscore)")
         zscoreLabel.fontName = "Arial-BoldMT"
         zscoreLabel.fontSize = 42
         zscoreLabel.setScale(1.5)
