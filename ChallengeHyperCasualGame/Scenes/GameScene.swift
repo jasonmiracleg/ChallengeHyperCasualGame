@@ -374,6 +374,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             x: frame.midX - 200,
             y: camera!.position.y - 300
         )
+        scoreLabel.zPosition = 10
         
         scoreLabel.alpha = isRestart ? 1 : 0
         
@@ -446,9 +447,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if !hasPlayed {
             SoundManager.playBackgroundMusic(fileName: "bgm.mp3")
         }
-        SoundManager.preloadEffect(fileName: "launch.mp3", volume: 0.8)
-        SoundManager.preloadEffect(fileName: "land.mp3", volume: 0.3)
-        //        restartButton = RestartButton.create(in: self)
+        SoundManager.preloadEffect(fileName: "launch.mp3", volume: 1.5)
         Wall.createWalls(in: self)
     }
     
@@ -531,7 +530,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         swipeLabel.fontSize = 18
         swipeLabel.fontColor = .white
         swipeLabel.position = CGPoint(x: frame.midX + 100, y: frame.maxY + 50)
-        swipeLabel.zPosition = 101
+        swipeLabel.zPosition = 10
         addChild(swipeLabel)
     }
     

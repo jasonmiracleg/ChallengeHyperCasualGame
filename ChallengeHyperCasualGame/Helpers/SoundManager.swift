@@ -14,7 +14,7 @@ struct SoundManager {
     private static var soundEffects: [String: AVAudioPlayer] = [:]
     
     // MARK: - Background Music
-    static func playBackgroundMusic(fileName: String, volume: Float = 0.1) {
+    static func playBackgroundMusic(fileName: String, volume: Float = 0.5) {
         guard let url = Bundle.main.url(forResource: fileName, withExtension: nil) else {
             print("Background music file not found: \(fileName)")
             return
