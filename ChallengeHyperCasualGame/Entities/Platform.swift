@@ -226,7 +226,7 @@ enum Platform {
     // MARK: - Cleanup & Generate New Platforms
     static func cleanupAndGenerate(platforms: [SKSpriteNode], in scene: GameScene, lastPlatformX: inout CGFloat) -> [SKSpriteNode] {
         var newPlatforms = platforms.filter {
-            if $0.position.y > (scene.camera?.position.y ?? 0) - scene.frame.height - 200 {
+            if $0.position.y > (scene.camera?.position.y ?? 0) - scene.frame.height + 200 {
                 return true
             } else {
                 $0.removeFromParent()
