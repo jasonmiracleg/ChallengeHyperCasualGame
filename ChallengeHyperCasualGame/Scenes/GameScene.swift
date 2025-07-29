@@ -372,7 +372,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             y: camera!.position.y - 300,
         )
         
-        scoreLabel.alpha = 0
+        scoreLabel.alpha = isRestart ? 1 : 0
+        
         camera?.addChild(scoreLabel)
     }
     
