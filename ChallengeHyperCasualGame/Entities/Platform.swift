@@ -410,7 +410,7 @@ enum Platform {
         newWidth: CGFloat
     ) -> CGFloat {
         let wallWidth: CGFloat = 10
-        let safeGap: CGFloat = 100  // minimal extra gap
+        let safeGap: CGFloat = 10  // minimal extra gap
         
         let halfNewWidth = newWidth / 2
         let minX = scene.frame.minX + wallWidth + halfNewWidth
