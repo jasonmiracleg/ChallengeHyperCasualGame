@@ -84,8 +84,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             showTutorial()
         }
         createScoreLabel()
-//        createGameOverButton()
-        createDynamicScoreLabel()
         
         print("BUILD SUCCESSFULL\n\n\n\n\n")
     }
@@ -325,23 +323,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     candidate.userData?["hasBeenLandedOn"] = true
                     
                     let dustParticle = Particles.createDustEmitter()
+
+                    var scoreGained = 1
                     
                     switch player.checkRotation(){
                     case .bottleCap:
-                        updateScore(by: scoreMultiplier * 3)
+                        scoreGained *= 3
+                        updateScore(by: scoreGained)
                         applyParticles(particle: dustParticle, object: player)
+
                         print("Player landed A CAP FLIP")
                         break
                     case .standing:
-                        updateScore(by: scoreMultiplier * 2)
+                        scoreGained *= 2
+                        updateScore(by: scoreGained)
                         applyParticles(particle: dustParticle, object: player)
+
                         print("Player landed A FLIP")
                         break
                     default:
-                        updateScore(by: scoreMultiplier)
+                        updateScore(by: scoreGained)
                         print("Player landed")
                         break
                     }
+                    createDynamicScoreLabel(points: scoreGained)
                     
                     keepScoreMultiplier = true
                     lastPlatform = candidate
@@ -357,8 +362,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             candidateLandingPlatform = nil
             print("score: \(score)")
         }
-        
-        updateDynamicScoreLabel(points: scoreMultiplier)
     }
     
     //labels
@@ -369,7 +372,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         scoreLabel.fontColor = .white
         scoreLabel.position = CGPoint(
             x: frame.midX - 200,
-            y: camera!.position.y - 300,
+            y: camera!.position.y - 300
         )
         
         camera?.addChild(scoreLabel)
@@ -388,27 +391,26 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         camera?.addChild(highscoreLabel)
     }
     
-    func createDynamicScoreLabel(){
-        dynamicScoreLabel = SKLabelNode(text: "+0")
+    func createDynamicScoreLabel(points: Int){
+        dynamicScoreLabel = SKLabelNode(text: "+\(points)")
         dynamicScoreLabel.fontName = "AvenirNext-Bold"
         dynamicScoreLabel.fontSize = 16
         dynamicScoreLabel.fontColor = .white
         dynamicScoreLabel.position = CGPoint(
-            x: player.position.x,
-            y: player.position.y
+            x: scoreLabel.frame.maxX + 30,
+            y: scoreLabel.frame.midY
         )
         
         camera?.addChild(dynamicScoreLabel)
-    }
-    
-    //updating
-    func updateDynamicScoreLabel(points: Int){
-        dynamicScoreLabel.text = "+\(points)"
-        dynamicScoreLabel.position = CGPoint(
-            // WHAT IS PLAYER POSITION?????
-            x: player.position.x - 30,
-            y: player.position.y - 30 - Camera.minCameraY
-        )
+        
+        let moveUp = SKAction.moveBy(x: 0, y: 30, duration: 1.0)
+        let fadeOut = SKAction.fadeOut(withDuration: 1.0)
+        let group = SKAction.group([moveUp, fadeOut])
+        let remove = SKAction.removeFromParent()
+        let sequence = SKAction.sequence([group, remove])
+
+        dynamicScoreLabel.run(sequence)
+
     }
     
     func updateScore(by points: Int = 1) {
@@ -533,6 +535,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         isGameOver = true
         scoreLabel.isHidden = true
         dynamicScoreLabel.isHidden = true
+        updateHighscore()
         gameOverUI = GameOverUI()
         gameOverUI.position = CGPoint(x: 0, y: 0)
         camera?.addChild(gameOverUI)
