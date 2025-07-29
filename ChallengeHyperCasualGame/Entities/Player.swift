@@ -87,7 +87,12 @@ class Player: SKNode {
             
             body.velocity = CGVector(dx: velocityX, dy: velocityY)
             
-            let spin = dx * 0.15
+            var spin = 0.0
+            if dx > 0{
+                spin = 3.0
+            } else {
+                spin = -3.0
+            }
             body.angularVelocity = spin
         }
     }
