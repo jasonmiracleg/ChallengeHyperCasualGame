@@ -22,7 +22,7 @@ enum Platform {
     private static let platformWeights = [0.25, 0.5, 0.25]
     
     // Platform Distance Distribution
-    private static let platformDistance = [225, 250, 275]
+    private static let platformDistance = [240, 260, 280]
     private static let platformDistanceWeights = [0.15, 0.60, 0.25]
     
     // MARK: - Create Single Platform
@@ -164,7 +164,7 @@ enum Platform {
             } else if i <= fixedPlatformOffsets.count {
                 x = fixedPlatformX[i - 1]
                 currentY = fixedPlatformOffsets[i - 1]
-                randomWidth = i < fixedPlatformX.count ? CGFloat(platformWidths[i-1]) : CGFloat(platformWidths[2])
+                randomWidth = 120
             } else {
                 // Random placement
                 let halfWidth = randomWidth / 2
@@ -210,7 +210,7 @@ enum Platform {
                     type: type,
                     for: platform.position.y,
                     targetPlatform: platform,
-                    currentPlatform: previous.position,
+                    currentPlatform: previous,
                     scene: scene
                 )
             }
@@ -268,7 +268,7 @@ enum Platform {
                     type: type,
                     for: newPlatform.position.y,
                     targetPlatform: newPlatform,
-                    currentPlatform: previous.position,
+                    currentPlatform: previous,
                     scene: scene
                 )
             }
@@ -431,7 +431,7 @@ enum Platform {
     }
     
     
-    private static func spawnWall(type: PlatformType, for height:CGFloat, targetPlatform: SKSpriteNode, currentPlatform: CGPoint, scene: GameScene){
+    private static func spawnWall(type: PlatformType, for height:CGFloat, targetPlatform: SKSpriteNode, currentPlatform: SKSpriteNode, scene: GameScene){
         if let type = targetPlatform.userData?["type"] as? PlatformType,
            type == .normal,
            platformCounts >= 10
@@ -439,8 +439,9 @@ enum Platform {
             let difficulty = min(height / 2500, 1.0)
             let wallChance = 0.15 + 0.05 * difficulty
             if CGFloat.random(in: 0...1) < wallChance {
-                let wall = Obstacle.createWall(near: targetPlatform, currentPlatformPos: currentPlatform, scene: scene)
-                scene.addChild(wall)
+                if let wall = Obstacle.createWall(near: targetPlatform, currentPlatform: currentPlatform, scene: scene) {
+                    scene.addChild(wall)
+                }
             }
         }
     }
