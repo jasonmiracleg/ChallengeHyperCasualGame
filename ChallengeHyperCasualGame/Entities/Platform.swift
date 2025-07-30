@@ -204,16 +204,6 @@ enum Platform {
                 platform.userData?["hasBeenLandedOn"] = false
             }
             
-            // --- Wall spawning ---
-            if let previous = previousPlatform {
-                spawnWall(
-                    type: type,
-                    for: platform.position.y,
-                    targetPlatform: platform,
-                    currentPlatform: previous,
-                    scene: scene
-                )
-            }
             
             platforms.append(platform)
             lastX = x
@@ -262,16 +252,7 @@ enum Platform {
                 width: CGFloat(randomWidth),
                 in: scene
             )
-            
-            if let previous = previousPlatform {
-                spawnWall(
-                    type: type,
-                    for: newPlatform.position.y,
-                    targetPlatform: newPlatform,
-                    currentPlatform: previous,
-                    scene: scene
-                )
-            }
+        
             
             newPlatforms.append(newPlatform)
             lastPlatformX = x
@@ -430,21 +411,7 @@ enum Platform {
         return xCandidates.randomElement() ?? scene.frame.midX
     }
     
-    
-    private static func spawnWall(type: PlatformType, for height:CGFloat, targetPlatform: SKSpriteNode, currentPlatform: SKSpriteNode, scene: GameScene){
-        if let type = targetPlatform.userData?["type"] as? PlatformType,
-           type == .normal,
-           platformCounts >= 10
-        {
-            let difficulty = min(height / 2500, 1.0)
-            let wallChance = 0.15 + 0.05 * difficulty
-            if CGFloat.random(in: 0...1) < wallChance {
-                if let wall = Obstacle.createWall(near: targetPlatform, currentPlatform: currentPlatform, scene: scene) {
-                    scene.addChild(wall)
-                }
-            }
-        }
-    }
+
     
     // MARK: - General Weighted Random Selector
     private static func getWeightedRandom<T>(items: [T], weights: [Double]) -> T {
